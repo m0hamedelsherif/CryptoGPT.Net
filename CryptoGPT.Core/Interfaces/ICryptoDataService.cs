@@ -31,6 +31,16 @@ namespace CryptoGPT.Core.Interfaces
         /// <param name="days">Number of days of historical data to retrieve</param>
         /// <returns>Market history data</returns>
         Task<MarketHistory> GetMarketChartAsync(string coinId, int days = 30);
+        
+        /// <summary>
+        /// Get historical market data for a cryptocurrency with extended data for technical analysis
+        /// </summary>
+        /// <param name="coinId">Coin identifier (e.g. "bitcoin")</param>
+        /// <param name="days">Base number of days of historical data to retrieve</param>
+        /// <param name="indicators">Dictionary of indicators and their parameters</param>
+        /// <returns>Market history data with sufficient historical points for indicator calculations</returns>
+        Task<MarketHistory> GetExtendedMarketChartAsync(string coinId, int days = 30, 
+            Dictionary<string, IndicatorParameters>? indicators = null);
 
         /// <summary>
         /// Get market overview with top gainers, losers, and by volume

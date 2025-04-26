@@ -13,42 +13,11 @@ import { CryptoDataService } from '../../services/crypto-data.service';
 import { NewsService } from '../../services/news.service';
 import {
   ApexAxisChartSeries,
-  ApexChart,
-  ApexXAxis,
-  ApexDataLabels,
-  ApexStroke,
-  ApexTitleSubtitle,
-  ApexTooltip,
-  ApexYAxis,
-  ApexFill,
-  ApexMarkers,
-  ApexTheme,
-  ApexLegend,
-  ApexGrid,
-  ApexResponsive,
   NgApexchartsModule,
   ChartComponent,
-  ApexAnnotations,
+  ApexOptions
 } from 'ng-apexcharts';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
-
-export type ChartOptions = {
-  series: ApexAxisChartSeries;
-  chart: ApexChart;
-  xaxis: ApexXAxis;
-  yaxis: ApexYAxis;
-  dataLabels: ApexDataLabels;
-  stroke: ApexStroke;
-  title: ApexTitleSubtitle;
-  tooltip: ApexTooltip;
-  fill: ApexFill;
-  markers: ApexMarkers;
-  theme: ApexTheme;
-  legend: ApexLegend;
-  grid: ApexGrid;
-  responsive: ApexResponsive[];
-  annotations: ApexAnnotations;
-};
 
 @Component({
   selector: 'app-coin-detail',
@@ -63,6 +32,8 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   isLoading = true;
   error: string | null = null;
   coinId: string = '';
+  // Flag to track if technical analysis data has been loaded
+  technicalAnalysisLoaded = false;
   coinData: any = {
     id: '',
     symbol: '',
@@ -123,7 +94,7 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     macd: '#03A9F4',
   };
 
-  chartOptions: ChartOptions = {
+  chartOptions: ApexOptions = {
     series: [],
     chart: {
       type: 'line',
@@ -132,7 +103,7 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       toolbar: { show: true },
     },
     dataLabels: { enabled: false },
-    stroke: { curve: 'smooth', width: 2 },
+    stroke: { curve: 'smooth', width: 3 },
     title: { text: '', align: 'left' },
     xaxis: {
       type: 'datetime',
@@ -203,15 +174,33 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       },
     },
     fill: {
-      type: 'gradient',
+      type: 'solid',
       gradient: {
-        shade: 'light',
+        shade: 'dark',
         type: 'vertical',
-        opacityFrom: 0.6,
-        opacityTo: 0.1,
+        opacityFrom: 0.8,
+        opacityTo: 0.2,
+        colorStops: [
+          {
+            offset: 0,
+            color: "#1A73E8",
+            opacity: 0.6
+          },
+          {
+            offset: 100,
+            color: "#1A73E8",
+            opacity: 0.1
+          }
+        ]
       },
     },
-    markers: { size: 0 },
+    markers: { 
+      size: 0,
+      hover: {
+        size: 5,
+        sizeOffset: 3
+      }
+    },
     theme: { mode: 'light' },
     legend: { show: true },
     grid: {
@@ -226,6 +215,7 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     ],
     annotations: {},
   };
+  chartData: any;
 
   constructor(
     private route: ActivatedRoute,
@@ -305,25 +295,72 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   loadChartData(): void {
-    this.cryptoService.getMarketChart(this.coinId, this.selectedDays).subscribe({
+    // Determine which indicators to request based on enabled indicators
+    const enabledIndicatorStrings: string[] = [];
+    
+    Object.entries(this.enabledIndicators).forEach(([key, enabled]) => {
+      if (enabled) {
+        const [type, period] = key.split('_');
+        if (type === 'sma' || type === 'ema') {
+          enabledIndicatorStrings.push(`${type}:${period || '20'}`);
+        } else if (type === 'rsi') {
+          enabledIndicatorStrings.push(`${type}:${period || '14'}`);
+        } else if (key === 'macd') {
+          enabledIndicatorStrings.push('macd');
+        } else if (key.startsWith('bollinger')) {
+          // Only add bollinger once regardless of which band is enabled
+          if (!enabledIndicatorStrings.some(i => i.startsWith('bollinger'))) {
+            enabledIndicatorStrings.push('bollinger:20:2');
+          }
+        }
+      }
+    });
+    
+    // Use extended chart data with indicators
+    this.cryptoService.getEnhancedChart(
+      this.coinId, 
+      this.selectedDays, 
+      enabledIndicatorStrings.length > 0 ? enabledIndicatorStrings : undefined
+    ).subscribe({
       next: (data) => {
+        this.chartData = data;
         this.updateChart(data);
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error fetching market chart:', error);
-        this.error = 'Failed to load price chart data.';
-        this.isLoading = false;
+        console.error('Error fetching enhanced chart data:', error);
+        
+        // If the enhanced chart fails (likely due to insufficient data), fall back to regular chart
+        if (error.status === 422) {
+          this.error = 'Insufficient historical data for the requested indicators. Using basic chart instead.';
+          
+          // Fallback to regular chart
+          this.cryptoService.getMarketChart(this.coinId, this.selectedDays).subscribe({
+            next: (data) => {
+              this.updateChart(data);
+              this.isLoading = false;
+            },
+            error: (fallbackError) => {
+              console.error('Error fetching market chart:', fallbackError);
+              this.error = 'Failed to load price chart data.';
+              this.isLoading = false;
+            },
+          });
+        } else {
+          this.error = 'Failed to load enhanced chart data.';
+          this.isLoading = false;
+        }
       },
     });
   }
 
   loadTechnicalAnalysis(): void {
-    if (!this.coinData?.symbol) return;
+    if (!this.coinData?.symbol || this.technicalAnalysisLoaded) return;
 
     this.cryptoService.getTechnicalAnalysis(this.coinData.symbol).subscribe({
       next: (data) => {
         this.technicalAnalysis = data;
+        this.technicalAnalysisLoaded = true;
 
         // Process indicator data for chart
         this.processIndicatorData(data);
@@ -365,82 +402,51 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
     }));
 
     // Create the new options object
-    const newOptions: Partial<ChartOptions> = {
+    const newOptions: Partial<ApexOptions> = {
       series: [
         {
-          name: `${this.coinData.name} Price`,
+          name: `${this.coinData.name || 'Price'} Price`,
           data: prices,
+          color: '#1A73E8',
+          type: 'line',
         },
       ],
-      title: { text: `${this.coinData.name} Price Chart`, align: 'left' },
-      xaxis: {
-        type: 'datetime',
-        title: { text: 'Date' },
-        labels: {
-          datetimeUTC: true,
-          format: 'dd MMM yyyy',
-          formatter: (value: string, timestamp?: number, opts?: any) => {
-            const ts = timestamp ?? Number(value);
-            if (!ts) return '';
-            const date = new Date(ts);
-            if (this.selectedDays <= 7) {
-              const day = date.getDate().toString().padStart(2, '0');
-              const month = date.toLocaleString('en-US', { month: 'short' });
-              const hour = date.getHours().toString().padStart(2, '0');
-              const minute = date.getMinutes().toString().padStart(2, '0');
-              return `${day} ${month} ${hour}:${minute}`;
-            } else {
-              const day = date.getDate().toString().padStart(2, '0');
-              const month = date.toLocaleString('en-US', { month: 'short' });
-              const year = date.getFullYear();
-              return `${day} ${month} ${year}`;
-            }
-          },
-        },
-      },
-      yaxis: {
-        title: { text: 'Price (USD)' },
-        labels: {
-          formatter: (val: number) => {
-            if (val >= 1e12) return (val / 1e12).toFixed(2) + 'T';
-            if (val >= 1e9) return (val / 1e9).toFixed(2) + 'B';
-            if (val >= 1e6) return (val / 1e6).toFixed(2) + 'M';
-            if (val >= 1e3) return (val / 1e3).toFixed(2) + 'K';
-            return val.toFixed(2);
-          },
-        },
-      },
-      tooltip: {
-        x: {
-          formatter: (value: number, opts?: any) => {
-            const ts = Number(value);
-            if (!ts) return '';
-            const date = new Date(ts);
-            if (this.selectedDays <= 7) {
-              const day = date.getDate().toString().padStart(2, '0');
-              const month = date.toLocaleString('en-US', { month: 'short' });
-              const hour = date.getHours().toString().padStart(2, '0');
-              const minute = date.getMinutes().toString().padStart(2, '0');
-              return `${day} ${month} ${hour}:${minute}`;
-            } else {
-              const day = date.getDate().toString().padStart(2, '0');
-              const month = date.toLocaleString('en-US', { month: 'short' });
-              const year = date.getFullYear();
-              return `${day} ${month} ${year}`;
-            }
-          },
-        },
-        y: {
-          formatter: (val: number) => {
-            if (val >= 1e12) return '$' + (val / 1e12).toFixed(2) + 'T';
-            if (val >= 1e9) return '$' + (val / 1e9).toFixed(2) + 'B';
-            if (val >= 1e6) return '$' + (val / 1e6).toFixed(2) + 'M';
-            if (val >= 1e3) return '$' + (val / 1e3).toFixed(2) + 'K';
-            return '$' + val.toFixed(2);
-          },
-        },
-      },
+      title: { text: `${this.coinData.name || 'Cryptocurrency'} Price Chart`, align: 'left' },
+      // ...existing code...
     };
+
+    // Process indicator data if available directly from the enhanced chart endpoint
+    if (data.indicatorSeries && Object.keys(data.indicatorSeries).length > 0) {
+      this.indicatorData = {};
+      
+      // Map the server indicator names to our frontend indicator names
+      const indicatorMapping: { [key: string]: string } = {
+        'sma_20': 'sma_14',
+        'ema_20': 'ema_14',
+        'bollinger_upper': 'bollinger_upper',
+        'bollinger_middle': 'bollinger_middle', 
+        'bollinger_lower': 'bollinger_lower',
+        'rsi_14': 'rsi',
+        'macd_line': 'macd'
+      };
+      
+      // Process each indicator from the server
+      Object.keys(data.indicatorSeries).forEach(key => {
+        const series = data.indicatorSeries[key];
+        if (series && series.length > 0) {
+          // Convert to chart format and map to our indicator names
+          const mappedKey = this.mapIndicatorKey(key);
+          if (mappedKey) {
+            this.indicatorData[mappedKey] = series.map((point: any) => ({
+              x: new Date(point.timestamp),
+              y: point.value
+            }));
+          }
+        }
+      });
+      
+      console.log('Processed indicator data:', Object.keys(this.indicatorData));
+    }
 
     // Assign to trigger change detection
     this.chartOptions = { ...this.chartOptions, ...newOptions };
@@ -455,9 +461,7 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Process technical indicators for displaying on chart
   processIndicatorData(data: any): void {
-    if (!data || !data.indicatorGroups) return;
-    
-    this.indicatorData = {};
+    if (!data) return;
     
     // If the backend provides time-series data for each indicator, use it
     if (data.indicatorSeries && Object.keys(data.indicatorSeries).length > 0) {
@@ -465,11 +469,14 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       Object.keys(data.indicatorSeries).forEach(key => {
         const series = data.indicatorSeries[key];
         if (series && series.length > 0) {
-          // Convert to chart format
-          this.indicatorData[key] = series.map((point: any) => ({
-            x: new Date(point.timestamp),
-            y: point.value
-          }));
+          // Convert to chart format and map to our indicator names
+          const mappedKey = this.mapIndicatorKey(key);
+          if (mappedKey) {
+            this.indicatorData[mappedKey] = series.map((point: any) => ({
+              x: new Date(point.timestamp),
+              y: point.value
+            }));
+          }
         }
       });
       
@@ -478,50 +485,98 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       return;
     }
     
-    // Fallback to using single points if time-series isn't available
-    // Extract indicator data from groups
-    data.indicatorGroups.forEach((group: any) => {
-      if (group.type === 'sma') {
-        const sma14 = group.indicators.find((i: any) => i.name === 'sma_14');
-        if (sma14) {
-          this.indicatorData['sma_14'] = [{ x: new Date(), y: sma14.value }];
-        }
-      }
-      
-      if (group.type === 'ema') {
-        const ema14 = group.indicators.find((i: any) => i.name === 'ema_14');
-        if (ema14) {
-          this.indicatorData['ema_14'] = [{ x: new Date(), y: ema14.value }];
-        }
-      }
-      
-      if (group.type === 'bollinger') {
-        const upper = group.indicators.find((i: any) => i.name === 'upper_band');
-        const middle = group.indicators.find((i: any) => i.name === 'middle_band');
-        const lower = group.indicators.find((i: any) => i.name === 'lower_band');
+    // If we have indicatorGroups, process them
+    if (data.indicatorGroups && data.indicatorGroups.length > 0) {
+      data.indicatorGroups.forEach((group: any) => {
+        if (!group.indicators) return;
         
-        if (upper) this.indicatorData['bollinger_upper'] = [{ x: new Date(), y: upper.value }];
-        if (middle) this.indicatorData['bollinger_middle'] = [{ x: new Date(), y: middle.value }];
-        if (lower) this.indicatorData['bollinger_lower'] = [{ x: new Date(), y: lower.value }];
-      }
-      
-      if (group.type === 'rsi') {
-        const rsi = group.indicators.find((i: any) => i.name === 'rsi');
-        if (rsi) {
-          this.indicatorData['rsi'] = [{ x: new Date(), y: rsi.value }];
+        // Process each indicator type
+        switch (group.type.toLowerCase()) {
+          case 'sma':
+            const sma14 = group.indicators.find((i: any) => i.name === 'sma_14');
+            if (sma14 && sma14.value) {
+              // Use timestamps from price chart for proper display
+              if (this.chartData && this.chartData.prices && this.chartData.prices.length > 0) {
+                this.indicatorData['sma_14'] = this.createFlatLineIndicator(
+                  this.chartData.prices, 
+                  sma14.value
+                );
+              }
+            }
+            break;
+            
+          case 'ema':
+            const ema14 = group.indicators.find((i: any) => i.name === 'ema_14');
+            if (ema14 && ema14.value) {
+              if (this.chartData && this.chartData.prices && this.chartData.prices.length > 0) {
+                this.indicatorData['ema_14'] = this.createFlatLineIndicator(
+                  this.chartData.prices, 
+                  ema14.value
+                );
+              }
+            }
+            break;
+            
+          case 'bollinger':
+            const upper = group.indicators.find((i: any) => i.name === 'upper_band');
+            const middle = group.indicators.find((i: any) => i.name === 'middle_band');
+            const lower = group.indicators.find((i: any) => i.name === 'lower_band');
+            
+            if (this.chartData && this.chartData.prices && this.chartData.prices.length > 0) {
+              if (upper && upper.value) {
+                this.indicatorData['bollinger_upper'] = this.createFlatLineIndicator(
+                  this.chartData.prices,
+                  upper.value
+                );
+              }
+              
+              if (middle && middle.value) {
+                this.indicatorData['bollinger_middle'] = this.createFlatLineIndicator(
+                  this.chartData.prices,
+                  middle.value
+                );
+              }
+              
+              if (lower && lower.value) {
+                this.indicatorData['bollinger_lower'] = this.createFlatLineIndicator(
+                  this.chartData.prices,
+                  lower.value
+                );
+              }
+            }
+            break;
+            
+          case 'rsi':
+            const rsi = group.indicators.find((i: any) => i.name === 'rsi');
+            if (rsi && rsi.value) {
+              if (this.chartData && this.chartData.prices && this.chartData.prices.length > 0) {
+                this.indicatorData['rsi'] = this.createFlatLineIndicator(
+                  this.chartData.prices,
+                  rsi.value
+                );
+              }
+            }
+            break;
+            
+          case 'macd':
+            const macd = group.indicators.find((i: any) => i.name === 'macd_line');
+            if (macd && macd.value) {
+              if (this.chartData && this.chartData.prices && this.chartData.prices.length > 0) {
+                this.indicatorData['macd'] = this.createFlatLineIndicator(
+                  this.chartData.prices,
+                  macd.value
+                );
+              }
+            }
+            break;
         }
-      }
-      
-      if (group.type === 'macd') {
-        const macd = group.indicators.find((i: any) => i.name === 'macd_line');
-        if (macd) {
-          this.indicatorData['macd'] = [{ x: new Date(), y: macd.value }];
-        }
-      }
-    });
+      });
+    }
     
     // Update chart with indicators if any are enabled
-    this.updateChartWithIndicators();
+    if (Object.keys(this.indicatorData).length > 0) {
+      this.updateChartWithIndicators();
+    }
   }
 
   toggleIndicator(indicator: string): void {
@@ -534,11 +589,80 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   updateChartWithIndicators(): void {
-    if (!this.chartOptions.series || this.chartOptions.series.length === 0) return;
+    if (!this.chartOptions.series || !Array.isArray(this.chartOptions.series) || this.chartOptions.series.length === 0) return;
 
     // Start with the price series
     const mainSeries = this.chartOptions.series[0];
     const newSeries = [mainSeries];
+    
+    // Check if RSI is enabled to determine if we need a secondary y-axis
+    const rsiEnabled = this.enabledIndicators['rsi'] && this.indicatorData['rsi'];
+    
+    // Configure chart options for RSI if enabled
+    let updatedOptions: Partial<ApexOptions> = {};
+    if (rsiEnabled) {
+      updatedOptions = {
+        chart: {
+          type: 'line',
+          height: 500, // Increase height to accommodate the secondary chart
+          stacked: false
+        },
+        yaxis: [
+          {
+            // Primary y-axis for price
+            title: {
+              text: 'Price (USD)'
+            },
+            labels: {
+              formatter: (val: number) => {
+                if (val >= 1e12) return (val / 1e12).toFixed(2) + 'T';
+                if (val >= 1e9) return (val / 1e9).toFixed(2) + 'B';
+                if (val >= 1e6) return (val / 1e6).toFixed(2) + 'M';
+                if (val >= 1e3) return (val / 1e3).toFixed(2) + 'K';
+                return val.toFixed(2);
+              }
+            }
+          },
+          {
+            // Secondary y-axis for RSI
+            opposite: true,
+            title: {
+              text: 'RSI (0-100)'
+            },
+            min: 0,
+            max: 100,
+            tickAmount: 5,
+            labels: {
+              formatter: (val: number) => val.toFixed(0)
+            },
+            forceNiceScale: true
+          }
+        ]
+      };
+    } else {
+      // Reset to default configuration if RSI is disabled
+      updatedOptions = {
+        chart: {
+          type: 'line',
+          height: 350,
+          stacked: false
+        },
+        yaxis: {
+          title: {
+            text: 'Price (USD)'
+          },
+          labels: {
+            formatter: (val: number) => {
+              if (val >= 1e12) return (val / 1e12).toFixed(2) + 'T';
+              if (val >= 1e9) return (val / 1e9).toFixed(2) + 'B';
+              if (val >= 1e6) return (val / 1e6).toFixed(2) + 'M';
+              if (val >= 1e3) return (val / 1e3).toFixed(2) + 'K';
+              return val.toFixed(2);
+            }
+          }
+        }
+      };
+    }
 
     // Add enabled indicator series
     Object.keys(this.enabledIndicators).forEach((indicator) => {
@@ -549,6 +673,11 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
           color: this.indicatorColors[indicator],
           type: 'line'
         };
+        
+        // Special treatment for RSI - assign to secondary y-axis
+        if (indicator === 'rsi') {
+          seriesConfig.yAxisIndex = 1; // Use secondary y-axis for RSI
+        }
         
         // Only add dashed style for Bollinger bands
         if (indicator.includes('bollinger')) {
@@ -562,8 +691,45 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     });
 
-    // Update chart series
-    this.chartOptions.series = newSeries;
+    // Update chart series and options with proper type casting
+    this.chartOptions.series = newSeries as ApexAxisChartSeries;
+    this.chartOptions = { ...this.chartOptions, ...updatedOptions };
+    
+    // Add RSI threshold lines if RSI is enabled
+    if (rsiEnabled) {
+      this.chartOptions.annotations = {
+        yaxis: [
+          {
+            y: 70,
+            borderColor: '#FF4560',
+            label: {
+              borderColor: '#FF4560',
+              style: {
+                color: '#fff',
+                background: '#FF4560'
+              },
+              text: 'Overbought'
+            }
+          },
+          {
+            y: 30,
+            borderColor: '#00E396',
+            label: {
+              borderColor: '#00E396',
+              style: {
+                color: '#fff',
+                background: '#00E396'
+              },
+              text: 'Oversold'
+            }
+          }
+        ]
+      };
+    } else {
+      // Reset annotations if RSI is disabled
+      this.chartOptions.annotations = {};
+    }
+    
     this.cdr.detectChanges();
   }
 
@@ -631,5 +797,62 @@ export class CoinDetailComponent implements OnInit, OnDestroy, AfterViewInit {
 
   getIndicatorMeaning(meta?: any): string {
     return meta && meta.meaning ? meta.meaning : '';
+  }
+
+  /**
+   * Maps indicator keys from backend format to frontend format
+   */
+  private mapIndicatorKey(key: string): string | null {
+    // Direct mappings
+    const directMappings: {[key: string]: string} = {
+      'sma_20': 'sma_14',
+      'sma_50': 'sma_50',
+      'ema_20': 'ema_14',
+      'rsi_14': 'rsi',
+      'macd_line': 'macd',
+      'bollinger_upper': 'bollinger_upper',
+      'bollinger_middle': 'bollinger_middle',
+      'bollinger_lower': 'bollinger_lower'
+    };
+    
+    // Check direct mappings first
+    if (directMappings[key]) {
+      return directMappings[key];
+    }
+    
+    // Handle variations in bollinger bands naming
+    if (key.includes('bollinger')) {
+      if (key.includes('upper')) return 'bollinger_upper';
+      if (key.includes('middle')) return 'bollinger_middle';
+      if (key.includes('lower')) return 'bollinger_lower';
+    }
+    
+    // Handle variations in MACD naming
+    if (key.includes('macd') && key.includes('line')) {
+      return 'macd';
+    }
+    
+    // Handle RSI with different periods
+    if (key.startsWith('rsi_')) {
+      return 'rsi';
+    }
+    
+    // Fall back to original key if no mapping found
+    return key;
+  }
+
+  /**
+   * Creates a flat line indicator series based on price timestamps
+   */
+  private createFlatLineIndicator(prices: any[], value: number): any[] {
+    if (!prices || prices.length === 0 || value === undefined) {
+      return [];
+    }
+    
+    // Create a series with the same value across all price timestamps
+    return prices.map((point: any) => ({
+      x: new Date(point.timestamp),
+      y: value
+    }));
   }
 }

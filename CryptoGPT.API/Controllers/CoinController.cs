@@ -59,6 +59,102 @@ namespace CryptoGPT.API.Controllers
             return Ok(marketHistory);
         }
 
+        [HttpGet("{coinId}/enhanced-chart")]
+        [ProducesResponseType(typeof(MarketHistory), 200)]
+        public async Task<IActionResult> GetEnhancedChart(
+            string coinId, 
+            [FromQuery] int days = 30,
+            [FromQuery] string? indicators = null)
+        {
+            _logger.LogInformation("Getting enhanced chart for {CoinId} with {Days} days and indicators: {Indicators}", 
+                coinId, days, indicators ?? "default");
+            
+            // Parse indicator parameters
+            Dictionary<string, IndicatorParameters>? indicatorParams = null;
+            
+            if (!string.IsNullOrEmpty(indicators))
+            {
+                indicatorParams = new Dictionary<string, IndicatorParameters>();
+                var indicatorList = indicators.Split(',');
+                
+                foreach (var indicator in indicatorList)
+                {
+                    // Parse indicator with parameters, format: type:period or type
+                    var parts = indicator.Trim().Split(':');
+                    string indicatorType = parts[0].ToLowerInvariant();
+                    int period = (parts.Length > 1 && int.TryParse(parts[1], out int p)) ? p : 0;
+                    
+                    switch (indicatorType)
+                    {
+                        case "rsi":
+                            indicatorParams[$"rsi_{period}"] = IndicatorParameters.RSI(
+                                period > 0 ? period : 14);
+                            break;
+                            
+                        case "sma":
+                            indicatorParams[$"sma_{period}"] = IndicatorParameters.SMA(
+                                period > 0 ? period : 20);
+                            break;
+                            
+                        case "ema":
+                            indicatorParams[$"ema_{period}"] = IndicatorParameters.EMA(
+                                period > 0 ? period : 20);
+                            break;
+                            
+                        case "macd":
+                            // MACD can have custom parameters: macd:12:26:9 (fast:slow:signal)
+                            int fastPeriod = 12;
+                            int slowPeriod = 26;
+                            int signalPeriod = 9;
+                            
+                            if (parts.Length > 1 && int.TryParse(parts[1], out int fast))
+                                fastPeriod = fast;
+                                
+                            if (parts.Length > 2 && int.TryParse(parts[2], out int slow))
+                                slowPeriod = slow;
+                                
+                            if (parts.Length > 3 && int.TryParse(parts[3], out int signal))
+                                signalPeriod = signal;
+                                
+                            indicatorParams["macd"] = IndicatorParameters.MACD(
+                                fastPeriod, slowPeriod, signalPeriod);
+                            break;
+                            
+                        case "bb":
+                        case "bollinger":
+                            // Bollinger can have custom parameters: bollinger:20:2 (period:stdDev)
+                            double stdDev = 2.0;
+                            if (parts.Length > 2 && double.TryParse(parts[2], out double sd))
+                                stdDev = sd;
+                                
+                            indicatorParams["bollinger"] = IndicatorParameters.BollingerBands(
+                                period > 0 ? period : 20, stdDev);
+                            break;
+                            
+                        default:
+                            _logger.LogWarning("Unknown indicator type: {IndicatorType}", indicatorType);
+                            break;
+                    }
+                }
+            }
+            
+            // Get extended chart with indicators
+            var marketHistory = await _cryptoDataService.GetExtendedMarketChartAsync(coinId, days, indicatorParams);
+            
+            // Check if error indicator is present
+            if (marketHistory.IndicatorSeries != null && 
+                marketHistory.IndicatorSeries.ContainsKey("error"))
+            {
+                return Problem(
+                    detail: "Failed to load enough historical data for the requested indicators.",
+                    title: "Insufficient Historical Data",
+                    statusCode: 422
+                );
+            }
+            
+            return Ok(marketHistory);
+        }
+
         [HttpGet("overview")]
         [ProducesResponseType(typeof(MarketOverview), 200)]
         public async Task<IActionResult> GetMarketOverview()

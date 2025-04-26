@@ -10,5 +10,6 @@ namespace CryptoGPT.Core.Models
         public List<PriceHistoryPoint> Prices { get; set; } = new List<PriceHistoryPoint>();
         public List<PriceHistoryPoint> MarketCaps { get; set; } = new List<PriceHistoryPoint>();
         public List<PriceHistoryPoint> Volumes { get; set; } = new List<PriceHistoryPoint>();
+        public Dictionary<string, List<IndicatorTimePoint>> IndicatorSeries { get; set; }
     }
 }

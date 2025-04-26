@@ -24,6 +24,22 @@ export class CryptoDataService {
   getMarketChart(coinId: string, days: number = 30): Observable<any> {
     return this.http.get(`${this.apiUrl}/coin/${coinId}/chart?days=${days}`);
   }
+  
+  // Get enhanced chart data with technical indicators
+  getEnhancedChart(
+    coinId: string, 
+    days: number = 30, 
+    indicators?: string[]
+  ): Observable<any> {
+    let url = `${this.apiUrl}/coin/${coinId}/enhanced-chart?days=${days}`;
+    
+    // Add indicators if provided
+    if (indicators && indicators.length > 0) {
+      url += `&indicators=${indicators.join(',')}`;
+    }
+    
+    return this.http.get(url);
+  }
 
   // Get overall market stats, including top gainers and losers
   getMarketOverview(): Observable<any> {
