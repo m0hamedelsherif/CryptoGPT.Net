@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptoGPT.Services", "CryptoGPT.Services\CryptoGPT.Services.csproj", "{FB3C52EF-C944-42EB-9F94-B8C690E31BC4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptoGPT.Core", "CryptoGPT.Core\CryptoGPT.Core.csproj", "{68A0484C-E6EF-48BE-BB55-79DC922D913F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptoGPT.API", "CryptoGPT.API\CryptoGPT.API.csproj", "{B5EF3CCD-DA33-CC31-8CD0-8CCC251DAAED}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FB3C52EF-C944-42EB-9F94-B8C690E31BC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB3C52EF-C944-42EB-9F94-B8C690E31BC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB3C52EF-C944-42EB-9F94-B8C690E31BC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB3C52EF-C944-42EB-9F94-B8C690E31BC4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68A0484C-E6EF-48BE-BB55-79DC922D913F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68A0484C-E6EF-48BE-BB55-79DC922D913F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68A0484C-E6EF-48BE-BB55-79DC922D913F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68A0484C-E6EF-48BE-BB55-79DC922D913F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5EF3CCD-DA33-CC31-8CD0-8CCC251DAAED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5EF3CCD-DA33-CC31-8CD0-8CCC251DAAED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5EF3CCD-DA33-CC31-8CD0-8CCC251DAAED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5EF3CCD-DA33-CC31-8CD0-8CCC251DAAED}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CC991AC2-EF11-4098-B248-917CBC3B5D90}
+	EndGlobalSection
+EndGlobal

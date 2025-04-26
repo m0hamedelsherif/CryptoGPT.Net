@@ -1,0 +1,168 @@
+<div class="container">
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h4>AI-Powered Crypto Investment Recommendations</h4>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="recommendationForm" (ngSubmit)="generateRecommendations()">
+            <div class="form-group mb-3">
+              <label for="queryInput" class="form-label">What are you looking for?</label>
+              <textarea 
+                class="form-control" 
+                id="queryInput" 
+                formControlName="query" 
+                rows="3" 
+                placeholder="E.g. 'Recommend cryptocurrencies for long-term growth' or 'Which altcoins will perform well in the next quarter?'"
+              ></textarea>
+            </div>
+            
+            <div class="form-group mb-4">
+              <label class="form-label">Risk Profile</label>
+              <div class="row">
+                <div class="col-md-4">
+                  <div class="form-check">
+                    <input 
+                      class="form-check-input" 
+                      type="radio" 
+                      id="conservativeRadio" 
+                      formControlName="riskProfile" 
+                      [value]="RiskProfile.Conservative"
+                    >
+                    <label class="form-check-label" for="conservativeRadio">
+                      <strong>Conservative</strong>
+                      <p class="text-muted small mt-1">Focus on established cryptocurrencies with lower risk</p>
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-check">
+                    <input 
+                      class="form-check-input" 
+                      type="radio" 
+                      id="moderateRadio" 
+                      formControlName="riskProfile" 
+                      [value]="RiskProfile.Moderate"
+                    >
+                    <label class="form-check-label" for="moderateRadio">
+                      <strong>Moderate</strong>
+                      <p class="text-muted small mt-1">Balanced approach with a mix of established and growing assets</p>
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-check">
+                    <input 
+                      class="form-check-input" 
+                      type="radio" 
+                      id="aggressiveRadio" 
+                      formControlName="riskProfile" 
+                      [value]="RiskProfile.Aggressive"
+                    >
+                    <label class="form-check-label" for="aggressiveRadio">
+                      <strong>Aggressive</strong>
+                      <p class="text-muted small mt-1">Higher risk tolerance, including newer cryptocurrencies</p>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button 
+                type="submit" 
+                class="btn btn-primary" 
+                [disabled]="isLoading || !recommendationForm.valid"
+              >
+                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Generate Recommendations
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" *ngIf="recommendations">
+    <div class="col-md-12">
+      <!-- Market Analysis -->
+      <div class="card shadow mb-4">
+        <div class="card-header bg-dark text-white">
+          <h5>Market Analysis</h5>
+        </div>
+        <div class="card-body">
+          <p>{{recommendations.market_analysis}}</p>
+        </div>
+      </div>
+
+      <!-- Recommended Cryptocurrencies -->
+      <div class="card shadow mb-4">
+        <div class="card-header bg-success text-white">
+          <h5>Recommended Cryptocurrencies</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>Symbol</th>
+                  <th>Name</th>
+                  <th>Allocation %</th>
+                  <th>Rationale</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let coin of recommendations.recommendations">
+                  <td>{{coin.symbol}}</td>
+                  <td>{{coin.name}}</td>
+                  <td>{{coin.allocation}}%</td>
+                  <td>{{coin.rationale}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Investment Strategy -->
+      <div class="card shadow mb-4">
+        <div class="card-header bg-info text-white">
+          <h5>Investment Strategy</h5>
+        </div>
+        <div class="card-body">
+          <p>{{recommendations.strategy}}</p>
+        </div>
+      </div>
+
+      <!-- Risk Assessment -->
+      <div class="card shadow mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h5>Risk Assessment</h5>
+        </div>
+        <div class="card-body">
+          <p>{{recommendations.risk_assessment}}</p>
+        </div>
+      </div>
+
+      <!-- Timeframe -->
+      <div class="card shadow mb-4">
+        <div class="card-header bg-secondary text-white">
+          <h5>Recommended Timeframe</h5>
+        </div>
+        <div class="card-body">
+          <p>{{recommendations.timeframe}}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" *ngIf="error">
+    <div class="col-md-12">
+      <div class="alert alert-danger" role="alert">
+        {{error}}
+      </div>
+    </div>
+  </div>
+</div>

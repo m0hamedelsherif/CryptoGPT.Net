@@ -1,0 +1,246 @@
+<div class="container">
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+          <h4>Cryptocurrency Market Overview</h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <div class="card mb-3">
+                <div class="card-body text-center">
+                  <h5 class="card-title">Total Market Cap</h5>
+                  <h3 class="text-primary" *ngIf="marketOverview">
+                    ${{formatLargeNumber(marketOverview?.marketMetrics?.total_market_cap)}}
+                  </h3>
+                  <div *ngIf="!marketOverview" class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card mb-3">
+                <div class="card-body text-center">
+                  <h5 class="card-title">24h Volume</h5>
+                  <h3 class="text-info" *ngIf="marketOverview">
+                    ${{formatLargeNumber(marketOverview?.marketMetrics?.total_24h_volume)}}
+                  </h3>
+                  <div *ngIf="!marketOverview" class="spinner-border text-info" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card mb-3">
+                <div class="card-body text-center">
+                  <h5 class="card-title">BTC Dominance</h5>
+                  <h3 class="text-warning" *ngIf="marketOverview">
+                    {{marketOverview?.marketMetrics?.btc_dominance?.toFixed(2)}}%
+                  </h3>
+                  <div *ngIf="!marketOverview" class="spinner-border text-warning" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card mb-3">
+                <div class="card-body text-center">
+                  <h5 class="card-title">Market Sentiment</h5>
+                  <h3 [ngClass]="getSentimentClass()" *ngIf="marketSentiment">
+                    {{marketSentiment}}
+                  </h3>
+                  <div *ngIf="!marketSentiment" class="spinner-border text-secondary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Full cryptocurrency listing -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+          <h4>Cryptocurrencies</h4>
+        </div>
+        <div class="card-body">
+          <!-- Search and filter controls -->
+          <div class="row mb-4">
+            <div class="col-md-4">
+              <div class="input-group">
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="Search..." 
+                  [(ngModel)]="searchTerm"
+                  (input)="applyFilters()"
+                >
+                <button class="btn btn-outline-secondary" type="button">
+                  <i class="bi bi-search"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <select class="form-select" [(ngModel)]="sortBy" (change)="applyFilters()">
+                <option value="marketCapRank">Rank</option>
+                <option value="currentPrice">Price</option>
+                <option value="priceChangePercentage24h">24h Change %</option>
+                <option value="marketCap">Market Cap</option>
+                <option value="volume24h">Volume</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <div class="btn-group w-100">
+                <button 
+                  class="btn" 
+                  [ngClass]="{ 'btn-primary': sortDirection === 'asc', 'btn-outline-primary': sortDirection !== 'asc' }"
+                  (click)="setSortDirection('asc')"
+                >
+                  Ascending
+                </button>
+                <button 
+                  class="btn" 
+                  [ngClass]="{ 'btn-primary': sortDirection === 'desc', 'btn-outline-primary': sortDirection !== 'desc' }"
+                  (click)="setSortDirection('desc')"
+                >
+                  Descending
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Cryptocurrency table -->
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Price</th>
+                  <th scope="col">24h %</th>
+                  <th scope="col">Market Cap</th>
+                  <th scope="col">Volume (24h)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="isLoading">
+                  <td colspan="6" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngFor="let coin of filteredCoins">
+                  <td>{{coin.marketCapRank}}</td>
+                  <td>
+                    <a [routerLink]="['/coin', coin.id]" class="d-flex align-items-center text-decoration-none">
+                      <img [src]="coin.imageUrl" width="25" height="25" class="me-2" alt="{{coin.name}}">
+                      <span>{{coin.name}} <small class="text-muted">{{coin.symbol}}</small></span>
+                    </a>
+                  </td>
+                  <td>${{coin.currentPrice.toFixed(2)}}</td>
+                  <td [ngClass]="coin.priceChangePercentage24h >= 0 ? 'text-success' : 'text-danger'">
+                    {{coin.priceChangePercentage24h >= 0 ? '+' : ''}}{{coin.priceChangePercentage24h.toFixed(2)}}%
+                  </td>
+                  <td>${{formatLargeNumber(coin.marketCap)}}</td>
+                  <td>${{formatLargeNumber(coin.volume24h)}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Market insights -->
+  <div class="row">
+    <div class="col-md-6 mb-4">
+      <div class="card shadow">
+        <div class="card-header bg-success text-white">
+          <h5>Top Gainers (24h)</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Price</th>
+                  <th scope="col">24h %</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="isLoading">
+                  <td colspan="3" class="text-center">
+                    <div class="spinner-border spinner-border-sm text-success" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngFor="let coin of topGainers">
+                  <td>
+                    <a [routerLink]="['/coin', coin.id]" class="d-flex align-items-center text-decoration-none">
+                      <img [src]="coin.imageUrl" width="20" height="20" class="me-2" alt="{{coin.name}}">
+                      <span>{{coin.name}} <small class="text-muted">{{coin.symbol}}</small></span>
+                    </a>
+                  </td>
+                  <td>${{coin.currentPrice.toFixed(2)}}</td>
+                  <td class="text-success">+{{coin.priceChangePercentage24h.toFixed(2)}}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-4">
+      <div class="card shadow">
+        <div class="card-header bg-danger text-white">
+          <h5>Top Losers (24h)</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Price</th>
+                  <th scope="col">24h %</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="isLoading">
+                  <td colspan="3" class="text-center">
+                    <div class="spinner-border spinner-border-sm text-danger" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngFor="let coin of topLosers">
+                  <td>
+                    <a [routerLink]="['/coin', coin.id]" class="d-flex align-items-center text-decoration-none">
+                      <img [src]="coin.imageUrl" width="20" height="20" class="me-2" alt="{{coin.name}}">
+                      <span>{{coin.name}} <small class="text-muted">{{coin.symbol}}</small></span>
+                    </a>
+                  </td>
+                  <td>${{coin.currentPrice.toFixed(2)}}</td>
+                  <td class="text-danger">{{coin.priceChangePercentage24h.toFixed(2)}}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

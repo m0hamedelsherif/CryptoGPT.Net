@@ -1,0 +1,64 @@
+.tooltip-wrapper {
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+  z-index: 99999999;
+}
+
+.custom-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  width: 220px;
+  background-color: #222;
+  color: #fff;
+  text-align: left;
+  border-radius: 4px;
+  padding: 8px 10px;
+  position: absolute;
+  z-index: 9999;
+  bottom: 125%; /* Show above the icon */
+  left: 50%;
+  transform: translateX(-50%);
+  transition: opacity 0.2s;
+  font-size: 0.9em;
+  pointer-events: none;
+  white-space: normal;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.tooltip-wrapper:hover .custom-tooltip,
+.tooltip-wrapper:focus .custom-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Optional: Add a small arrow below the tooltip */
+.custom-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #222 transparent transparent transparent;
+}
+
+/* Debug: test tooltip always visible at bottom of page */
+#test-tooltip {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  z-index: 99999;
+  font-size: 1em;
+}
+
+.card, .row, .col-md-4, .col-md-8, .col-md-12 {
+  overflow: visible !important;
+  position: relative !important;
+}

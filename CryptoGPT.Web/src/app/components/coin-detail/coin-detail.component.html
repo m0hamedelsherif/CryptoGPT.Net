@@ -1,0 +1,315 @@
+<div class="container">
+  <div class="row" *ngIf="isLoading">
+    <div class="col-12 text-center my-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading && coinData">
+    <!-- Coin Header -->
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="card shadow">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <img [src]="coinData.imageUrl" width="64" height="64" [alt]="coinData.name" class="me-3">
+              <div>
+                <h2 class="mb-0">{{coinData.name}} <small class="text-muted">({{coinData.symbol}})</small></h2>
+                <div class="d-flex align-items-center mt-2">
+                  <h3 class="mb-0">${{coinData.currentPrice.toFixed(2)}}</h3>
+                  <span [ngClass]="coinData.priceChangePercentage24h >= 0 ? 'text-success' : 'text-danger'"
+                    class="ms-3">
+                    {{coinData.priceChangePercentage24h >= 0 ? '+' :
+                    ''}}{{coinData.priceChangePercentage24h.toFixed(2)}}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Price Chart and Market Stats -->
+    <div class="row mb-4">
+      <div class="col-md-8">
+        <div class="card shadow">
+          <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Price Chart</h5>
+            <div class="d-flex align-items-center">
+              <!-- Indicator Toggle Button -->
+              <button class="btn btn-sm me-3" [ngClass]="showIndicatorPanel ? 'btn-primary' : 'btn-outline-light'" 
+                (click)="toggleIndicatorPanel()">
+                <i class="bi bi-graph-up"></i> Indicators
+              </button>
+              
+              <!-- Time Period Selector -->
+              <div class="btn-group">
+                <button *ngFor="let period of [7, 14, 30, 90, 365]" class="btn btn-sm"
+                  [ngClass]="selectedDays === period ? 'btn-light' : 'btn-outline-light'"
+                  (click)="updateChartPeriod(period)">
+                  {{period}}D
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Indicator Controls Panel -->
+          <div class="card-body border-bottom" *ngIf="showIndicatorPanel" style="padding-top: 0.5rem; padding-bottom: 0.5rem;">
+            <div class="row">
+              <div class="col-12">
+                <div class="d-flex flex-wrap align-items-center">
+                  <div class="form-check form-switch me-3 mb-2" *ngFor="let indicator of ['sma_14', 'ema_14']">
+                    <input class="form-check-input" type="checkbox" [id]="'indicator-' + indicator"
+                      [checked]="enabledIndicators[indicator]" (change)="toggleIndicator(indicator)">
+                    <label class="form-check-label" [for]="'indicator-' + indicator">
+                      {{formatIndicatorName(indicator)}}
+                    </label>
+                  </div>
+                  
+                  <div class="dropdown mb-2 me-3">
+                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="bollingerDropdown"
+                      data-bs-toggle="dropdown" aria-expanded="false">
+                      Bollinger Bands
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="bollingerDropdown">
+                      <li>
+                        <div class="form-check ms-2">
+                          <input class="form-check-input" type="checkbox" id="bollinger-upper"
+                            [checked]="enabledIndicators['bollinger_upper']" (change)="toggleIndicator('bollinger_upper')">
+                          <label class="form-check-label" for="bollinger-upper">Upper Band</label>
+                        </div>
+                      </li>
+                      <li>
+                        <div class="form-check ms-2">
+                          <input class="form-check-input" type="checkbox" id="bollinger-middle"
+                            [checked]="enabledIndicators['bollinger_middle']" (change)="toggleIndicator('bollinger_middle')">
+                          <label class="form-check-label" for="bollinger-middle">Middle Band</label>
+                        </div>
+                      </li>
+                      <li>
+                        <div class="form-check ms-2">
+                          <input class="form-check-input" type="checkbox" id="bollinger-lower"
+                            [checked]="enabledIndicators['bollinger_lower']" (change)="toggleIndicator('bollinger_lower')">
+                          <label class="form-check-label" for="bollinger-lower">Lower Band</label>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div class="form-check form-switch me-3 mb-2">
+                    <input class="form-check-input" type="checkbox" id="rsi-indicator"
+                      [checked]="enabledIndicators['rsi']" (change)="toggleIndicator('rsi')">
+                    <label class="form-check-label" for="rsi-indicator">
+                      RSI
+                    </label>
+                  </div>
+                  
+                  <div class="form-check form-switch me-3 mb-2">
+                    <input class="form-check-input" type="checkbox" id="macd-indicator"
+                      [checked]="enabledIndicators['macd']" (change)="toggleIndicator('macd')">
+                    <label class="form-check-label" for="macd-indicator">
+                      MACD
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card-body">
+            <div class="chart-container" style="min-height:350px;">
+              <apx-chart [series]="chartOptions.series" 
+                [chart]="chartOptions.chart"
+                [responsive]="chartOptions.responsive" 
+                [xaxis]="chartOptions.xaxis"
+                [yaxis]="chartOptions.yaxis" 
+                [title]="chartOptions.title"
+                [dataLabels]="chartOptions.dataLabels"
+                [stroke]="chartOptions.stroke" 
+                [theme]="chartOptions.theme"
+                [fill]="chartOptions.fill" 
+                [markers]="chartOptions.markers"
+                [legend]="chartOptions.legend" 
+                [grid]="chartOptions.grid"
+                [annotations]="chartOptions.annotations">
+              </apx-chart>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow">
+          <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Market Stats</h5>
+          </div>
+          <div class="card-body">
+            <div class="list-group list-group-flush">
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span>Market Cap</span>
+                <strong>${{formatLargeNumber(coinData.marketCap)}}</strong>
+              </div>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span>Volume (24h)</span>
+                <strong>${{formatLargeNumber(coinData.volume24h)}}</strong>
+              </div>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span>Market Cap Rank</span>
+                <strong>#{{coinData.marketCapRank}}</strong>
+              </div>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span>Circulating Supply</span>
+                <strong>{{formatLargeNumber(coinData.circulatingSupply)}} {{coinData.symbol}}</strong>
+              </div>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span>Total Supply</span>
+                <strong>{{formatLargeNumber(coinData.totalSupply)}} {{coinData.symbol}}</strong>
+              </div>
+              <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span>All Time High</span>
+                <div class="text-end">
+                  <strong>${{coinData.allTimeHigh.toFixed(2)}}</strong><br>
+                  <small class="text-muted">{{coinData.allTimeHighDate | date}}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technical Analysis -->
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="card shadow">
+          <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Technical Analysis</h5>
+          </div>
+          <div class="card-body">
+            <ng-container *ngIf="technicalAnalysis; else taPlaceholder">
+              <div class="mb-2">
+                <strong>Symbol:</strong> {{ technicalAnalysis.symbol }}
+                <span class="ms-3"><strong>Last Price:</strong> {{ technicalAnalysis.lastPrice | number:'1.2-8' }}</span>
+              </div>
+              <div class="mb-2">
+                <strong>Overall Signal:</strong>
+                <span [ngClass]="getSignalClass(technicalAnalysis.overallSignalType)">
+                  {{ technicalAnalysis.overallSignalType | titlecase }}
+                  <span *ngIf="technicalAnalysis.overall?.value"> ({{ technicalAnalysis.overall?.value }})</span>
+                </span>
+              </div>
+              <div class="mb-3">
+                <strong>Indicators:</strong>
+                <div *ngFor="let group of getIndicatorGroups()" class="mb-3">
+                  <div class="d-flex align-items-center mb-1">
+                    <span class="fw-bold me-2">{{ group.type | uppercase }}</span>
+                    <span *ngIf="group.weight" class="badge bg-secondary ms-2">Weight: {{ group.weight }}</span>
+                    <span *ngIf="group.description" class="ms-2 text-muted" [tooltip]="group.description"><i class="bi bi-info-circle"></i></span>
+                  </div>
+                  <div *ngIf="group.meaning" class="ms-4 mb-1 small text-muted">{{ group.meaning }}</div>
+                  <ul class="list-group list-group-flush ms-3">
+                    <li *ngFor="let ind of group.indicators" class="list-group-item d-flex flex-row align-items-center">
+                      <span class="fw-bold me-2">{{ ind.name }}</span>
+                      <span class="me-2">{{ ind.value }}</span>
+                      <span *ngIf="ind.signal" [ngClass]="getSignalClass(ind.signal)" class="ms-1">({{ ind.signal | titlecase }})</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #taPlaceholder>
+              <span class="text-muted">Technical analysis data will appear here.</span>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommendation section  -->
+    <div class="row mb-4">
+      <!-- <div class="col-md-12">
+        <div class="card shadow">
+          <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recommendations</h5>
+            <button *ngIf="!recommendationsLoaded" class="btn btn-sm btn-outline-primary" (click)="loadRecommendations()">
+              Load Recommendations
+            </button>
+          </div>
+          <div class="card-body">
+            <ng-container *ngIf="recommendationsLoaded; else recPlaceholder">
+              <ng-container *ngIf="recommendations && recommendations.length; else noRecs">
+                <ul>
+                  <li *ngFor="let rec of recommendations">{{ rec }}</li>
+                </ul>
+              </ng-container>
+              <ng-template #noRecs>
+                <span class="text-muted">No recommendations available.</span>
+              </ng-template>
+            </ng-container>
+            <ng-template #recPlaceholder>
+              <span class="text-muted">Recommendations are loaded on demand.</span>
+            </ng-template>
+          </div>
+        </div>
+      </div> -->
+    </div>
+
+    <!-- Description -->
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="card shadow">
+          <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">About {{coinData.name}}</h5>
+          </div>
+          <div class="card-body">
+            <p [innerHTML]="coinData.description"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related News -->
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="card shadow">
+          <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Related News</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div *ngFor="let news of relatedNews" class="col-md-4 mb-3">
+                <div class="card h-100">
+                  <img *ngIf="news.imageUrl" [src]="news.imageUrl" class="card-img-top" [alt]="news.title">
+                  <div class="card-body">
+                    <h6 class="card-title">{{news.title}}</h6>
+                    <p class="card-text small">{{news.description | slice:0:100}}...</p>
+                  </div>
+                  <div class="card-footer d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{news.publishedAt | date:'short'}}</small>
+                    <a [href]="news.url" target="_blank" class="btn btn-sm btn-outline-primary">Read More</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Debug: Test ngx-bootstrap tooltip -->
+    <!-- <button type="button" class="btn btn-primary mt-3" tooltip="Test tooltip from ngx-bootstrap!" placement="top">
+      Test Tooltip
+    </button> -->
+  </div>
+
+  <!-- Error Message -->
+  <div class="row" *ngIf="error">
+    <div class="col-md-12">
+      <div class="alert alert-danger" role="alert">
+        {{error}}
+      </div>
+    </div>
+  </div>
+</div>
