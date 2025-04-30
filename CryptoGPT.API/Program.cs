@@ -107,8 +107,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwagger(); // Generate the Swagger JSON document
     app.UseHttpLogging();
     // request response logging
     app.UseSerilogRequestLogging();
