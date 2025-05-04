@@ -70,7 +70,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddApplication();
 
 // Add infrastructure layer services
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // Build the app
 var app = builder.Build();

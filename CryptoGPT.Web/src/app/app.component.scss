@@ -1,0 +1,109 @@
+/* Main content area */
+.main-content {
+  min-height: calc(100vh - 140px); /* Account for nav and footer */
+  padding: 1.5rem;
+  background-color: var(--bg-light);
+  transition: background-color 0.3s ease;
+}
+
+/* For dark mode */
+:host-context(.dark-mode) {
+  .main-content {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+  }
+  
+  .footer {
+    background-color: #2a2a2a !important;
+    
+    .text-muted {
+      color: #b0b0b0 !important;
+    }
+  }
+}
+
+/* Footer styling */
+.footer {
+  background-color: var(--bg-card);
+  border-top: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.3s ease;
+  
+  .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .text-muted {
+    color: var(--text-secondary);
+  }
+  
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+    
+    a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s ease;
+      
+      &:hover {
+        color: var(--primary-color);
+      }
+    }
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+  }
+  
+  .footer {
+    .container {
+      flex-direction: column;
+      gap: 0.5rem;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+    }
+  }
+}
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Page transition for route changes */
+.route-transition-container {
+  position: relative;
+}
+
+.route-transition {
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}

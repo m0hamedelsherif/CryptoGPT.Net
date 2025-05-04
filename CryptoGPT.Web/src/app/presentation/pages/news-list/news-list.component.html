@@ -1,0 +1,25 @@
+<div class="news-page">
+  <h1>Cryptocurrency News</h1>
+  
+  <div class="filter-bar">
+    <input type="text" placeholder="Search news..." (input)="onSearch($event)">
+    <select (change)="onFilterChange($event)">
+      <option value="all">All Sources</option>
+      <option value="coindesk">CoinDesk</option>
+      <option value="cointelegraph">CoinTelegraph</option>
+      <option value="bitcoin-magazine">Bitcoin Magazine</option>
+    </select>
+  </div>
+  
+  <div class="news-grid">
+    <app-news-card *ngFor="let newsItem of news()" [newsItem]="newsItem"></app-news-card>
+  </div>
+  
+  <div *ngIf="news().length === 0" class="no-results">
+    <p>No news articles found matching your criteria.</p>
+  </div>
+  
+  <button *ngIf="hasMoreNews" class="load-more" (click)="loadMoreNews()">
+    Load More News
+  </button>
+</div>

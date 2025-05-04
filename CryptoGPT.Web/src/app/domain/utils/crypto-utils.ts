@@ -6,6 +6,27 @@ import { CryptoCurrency } from '../models/crypto-currency.model';
  */
 
 /**
+ * Format large number with appropriate abbreviation (K, M, B, T)
+ * @param value The number to format
+ * @returns Formatted number string with appropriate suffix
+ */
+export function formatLargeNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '0';
+  
+  if (value >= 1_000_000_000_000) {
+    return (value / 1_000_000_000_000).toFixed(2) + 'T';
+  } else if (value >= 1_000_000_000) {
+    return (value / 1_000_000_000).toFixed(2) + 'B';
+  } else if (value >= 1_000_000) {
+    return (value / 1_000_000).toFixed(2) + 'M';
+  } else if (value >= 1_000) {
+    return (value / 1_000).toFixed(2) + 'K';
+  } else {
+    return value.toLocaleString('en-US');
+  }
+}
+
+/**
  * Format price with appropriate precision based on value
  * @param price The price value to format
  * @returns Formatted price string
@@ -91,7 +112,7 @@ export function sortCryptoCurrencies(
     
     switch (sortBy) {
       case 'rank':
-        comparison = a.rank - b.rank;
+        comparison = (a.marketCapRank ?? Infinity) - (b.marketCapRank ?? Infinity);
         break;
       case 'name':
         comparison = a.name.localeCompare(b.name);
@@ -103,10 +124,10 @@ export function sortCryptoCurrencies(
         comparison = a.marketCap - b.marketCap;
         break;
       case 'change':
-        comparison = a.changePercentage24h - b.changePercentage24h;
+        comparison = (a.priceChangePercentage24h ?? 0) - (b.priceChangePercentage24h ?? 0);
         break;
       default:
-        comparison = a.rank - b.rank;
+        comparison = (a.marketCapRank ?? Infinity) - (b.marketCapRank ?? Infinity);
     }
     
     return sortDirection === 'asc' ? comparison : -comparison;

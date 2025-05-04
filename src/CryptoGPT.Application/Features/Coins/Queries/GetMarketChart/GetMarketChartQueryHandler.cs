@@ -1,5 +1,6 @@
 using CryptoGPT.Application.Common.Models;
 using CryptoGPT.Application.Interfaces;
+using CryptoGPT.Domain.Entities;
 using MediatR;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +20,44 @@ namespace CryptoGPT.Application.Features.Coins.Queries.GetMarketChart
 
         public async Task<MarketHistoryDto> Handle(GetMarketChartQuery request, CancellationToken cancellationToken)
         {
-            var marketHistory = await _cryptoDataService.GetMarketChartAsync(request.CoinId, request.Days);
+            var indicatorParameters = new Dictionary<string, IndicatorParameters>();
+
+            if (request.Indicators.Count > 0)
+            {
+                foreach (var indicator in request.Indicators)
+                {
+                    var parts = indicator.Split(':');
+                    var name = parts[0].ToUpper();
+
+                    if (name == "SMA" || name == "EMA")
+                    {
+                        indicatorParameters[$"{name}{parts[1]}"] = new IndicatorParameters { Period = int.Parse(parts[1]) };
+                    }
+                    else if (name == "RSI")
+                    {
+                        indicatorParameters[$"{name}{parts[1]}"] = new IndicatorParameters { Period = int.Parse(parts[1]) };
+                    }
+                    else if (name == "MACD")
+                    {
+                        indicatorParameters[name] = new IndicatorParameters
+                        {
+                            Period = 9, // Default signal line period
+                            FastPeriod = 12, // Default fast period
+                            SlowPeriod = 26 // Default slow period
+                        };
+                    }
+                    else if (name == "BOLLINGER")
+                    {
+                        indicatorParameters["BBANDS"] = new IndicatorParameters
+                        {
+                            Period = int.Parse(parts[1]),
+                            Deviation = double.Parse(parts[2])
+                        };
+                    }
+                }
+            }
+
+            var marketHistory = await _cryptoDataService.GetMarketChartAsync(request.CoinId, request.Days, indicatorParameters);
 
             // Map domain entity to DTO
             var result = new MarketHistoryDto

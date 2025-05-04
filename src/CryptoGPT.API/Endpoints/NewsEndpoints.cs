@@ -1,6 +1,7 @@
 using Asp.Versioning;
-using Asp.Versioning.Builder;
-using System;
+using CryptoGPT.Application.Features.News.Queries.GetCoinNews;
+using CryptoGPT.Application.Features.News.Queries.GetLatestNews;
+using MediatR;
 
 namespace CryptoGPT.API.Endpoints
 {
@@ -20,42 +21,26 @@ namespace CryptoGPT.API.Endpoints
                 .WithOpenApi();
 
             // Get latest cryptocurrency news
-            group.MapGet("/", () =>
+            group.MapGet("/", async (IMediator mediator, int limit = 20) =>
             {
-                // To be implemented with MediatR
-                return Results.Ok(new[]
-                {
-                    new
-                    {
-                        id = "1",
-                        title = "Cryptocurrency News Example",
-                        url = "https://example.com/news/1",
-                        source = "Example News",
-                        publishedAt = DateTime.UtcNow.AddHours(-2),
-                        summary = "This is a placeholder for news implementation."
-                    }
-                });
+                var query = new GetLatestNewsQuery { Limit = limit };
+                var result = await mediator.Send(query);
+                return Results.Ok(result);
             })
             .WithName("GetLatestNews")
             .WithDescription("Get latest cryptocurrency news");
 
             // Get coin-specific news
-            group.MapGet("/{coinId}", (string coinId) =>
+            group.MapGet("/{coinId}", async (IMediator mediator, string coinId, string symbol, int limit) =>
             {
-                // To be implemented with MediatR
-                return Results.Ok(new[]
+                var query = new GetCoinNewsQuery
                 {
-                    new
-                    {
-                        id = "1",
-                        coinId = coinId,
-                        title = $"{coinId} News Example",
-                        url = $"https://example.com/news/{coinId}/1",
-                        source = "Example News",
-                        publishedAt = DateTime.UtcNow.AddHours(-1),
-                        summary = $"This is a placeholder for {coinId} specific news implementation."
-                    }
-                });
+                    CoinId = coinId,
+                    Symbol = symbol,
+                    Limit = limit <= 0 ? 10 : limit
+                };
+                var result = await mediator.Send(query);
+                return Results.Ok(result);
             })
             .WithName("GetCoinNews")
             .WithDescription("Get coin-specific news");

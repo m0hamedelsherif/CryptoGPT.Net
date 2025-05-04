@@ -11,11 +11,11 @@ export class NewsApiService {
 
   constructor(private apiClient: ApiClientService) {}
 
-  getNews(count: number = 10): Observable<CryptoNewsItem[]> {
-    return this.apiClient.get<CryptoNewsItem[]>(this.baseEndpoint, { count });
+  getNews(limit: number = 10, page: number = 1): Observable<CryptoNewsItem[]> {
+    return this.apiClient.get<CryptoNewsItem[]>(this.baseEndpoint, { limit, page });
   }
 
-  getNewsForCoin(coinId: string, count: number = 5): Observable<CryptoNewsItem[]> {
-    return this.apiClient.get<CryptoNewsItem[]>(`${this.baseEndpoint}/coin/${coinId}`, { count });
+  getNewsForCoin(coinId: string, limit: number = 5): Observable<CryptoNewsItem[]> {
+    return this.apiClient.get<CryptoNewsItem[]>(`${this.baseEndpoint}/${coinId}`, { limit });
   }
 }

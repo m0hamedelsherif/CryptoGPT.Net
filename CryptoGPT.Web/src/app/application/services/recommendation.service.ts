@@ -1,73 +1,101 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { tap, catchError, finalize } from 'rxjs/operators';
-import { RecommendationApiService } from '../../infrastructure/api/recommendation-api.service';
-import { AppStateService } from '../state/app-state.service';
-import { CryptoCurrency, RiskProfile } from '../../domain/models/crypto-currency.model';
-import { CryptoAnalyticsService } from '../../domain/services/crypto-analytics.service';
+import { HttpClient } from '@angular/common/http';
+import { Observable, catchError, map, of, tap } from 'rxjs';
+import { signal, computed } from '@angular/core';
+import { TradeRecommendation } from '../../domain/models/crypto-currency.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RecommendationService {
-  // Use the state observables from the AppStateService
-  recommendations$ = this.appState.recommendations$;
-  userProfile$ = this.appState.userProfile$;
-
-  constructor(
-    private recommendationApiService: RecommendationApiService,
-    private cryptoAnalytics: CryptoAnalyticsService,
-    private appState: AppStateService
-  ) {}
-
-  loadRecommendations(riskProfile: RiskProfile): Observable<CryptoCurrency[]> {
-    this.setLoading(true);
+  private apiUrl = environment.apiUrl;
+  
+  // State signals
+  private recommendationsSignal = signal<TradeRecommendation[]>([]);
+  private loadingSignal = signal<boolean>(false);
+  private errorSignal = signal<string | null>(null);
+  
+  // Public computed signals
+  readonly recommendations = computed(() => this.recommendationsSignal());
+  readonly loading = computed(() => this.loadingSignal());
+  readonly error = computed(() => this.errorSignal());
+  
+  constructor(private http: HttpClient) {}
+  
+  /**
+   * Load AI trading recommendations
+   * @param limit Optional limit parameter
+   * @returns Observable that completes when data is loaded
+   */
+  loadRecommendations(limit: number = 5): Observable<TradeRecommendation[]> {
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
     
-    // Save the user profile in state
-    this.appState.setUserProfile(riskProfile);
+    return this.http.get<any>(`${this.apiUrl}/recommendation?limit=${limit}`)
+      .pipe(
+        map(response => this.mapRecommendations(response)),
+        tap(recommendations => {
+          this.recommendationsSignal.set(recommendations);
+          this.loadingSignal.set(false);
+        }),
+        catchError(error => {
+          console.error('Error loading recommendations:', error);
+          this.errorSignal.set(error.message || 'Failed to load recommendations');
+          this.loadingSignal.set(false);
+          return of([] as TradeRecommendation[]);
+        })
+      );
+  }
+  
+  /**
+   * Load recommendations for a specific coin
+   * @param coinId Coin identifier
+   * @returns Observable with recommendations for the specified coin
+   */
+  loadCoinRecommendations(coinId: string): Observable<TradeRecommendation[]> {
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
     
-    return this.recommendationApiService.getRecommendations(riskProfile).pipe(
-      tap(recommendations => {
-        // Store the recommendations in state
-        this.appState.setRecommendations(recommendations);
-      }),
-      catchError(error => {
-        console.error('Error loading recommendations', error);
-        this.setError('Failed to load personalized recommendations');
-        return of([]);
-      }),
-      finalize(() => this.setLoading(false))
-    );
-  }
-
-  saveUserProfile(profile: RiskProfile): Observable<RiskProfile> {
-    return this.recommendationApiService.saveRiskProfile(profile).pipe(
-      tap(savedProfile => {
-        // Store the user profile in state
-        this.appState.setUserProfile(savedProfile);
-      })
-    );
+    return this.http.get<any>(`${this.apiUrl}/recommendation/${coinId}`)
+      .pipe(
+        map(response => this.mapRecommendations(response)),
+        tap(recommendations => {
+          this.recommendationsSignal.set(recommendations);
+          this.loadingSignal.set(false);
+        }),
+        catchError(error => {
+          console.error(`Error loading recommendations for ${coinId}:`, error);
+          this.errorSignal.set(error.message || 'Failed to load recommendations');
+          this.loadingSignal.set(false);
+          return of([] as TradeRecommendation[]);
+        })
+      );
   }
   
-  private setLoading(loading: boolean): void {
-    this.updateRecommendationState({
-      loading
-    });
-  }
-  
-  private setError(error: string | null): void {
-    this.updateRecommendationState({
-      error,
-      loading: false
-    });
-  }
-  
-  private updateRecommendationState(update: Partial<{loading: boolean, error: string | null}>): void {
-    this.appState.updateState({
-      recommendations: {
-        ...this.appState.currentState.recommendations,
-        ...update
-      }
-    });
+  /**
+   * Map API response to TradeRecommendation objects
+   * @param response Response from API
+   * @returns Array of TradeRecommendation objects
+   */
+  private mapRecommendations(response: any): TradeRecommendation[] {
+    if (!response || !response.recommendations) {
+      return [];
+    }
+    
+    return response.recommendations.map((rec: any) => ({
+      id: rec.id,
+      coinId: rec.coinId,
+      coinName: rec.coinName,
+      coinSymbol: rec.coinSymbol,
+      type: rec.type,
+      price: rec.price,
+      targetPrice: rec.targetPrice,
+      stopLoss: rec.stopLoss,
+      confidence: rec.confidence || 'medium',
+      reasoning: rec.reasoning,
+      timestamp: new Date(rec.timestamp),
+      expiryDate: rec.expiryDate ? new Date(rec.expiryDate) : undefined
+    }));
   }
 }

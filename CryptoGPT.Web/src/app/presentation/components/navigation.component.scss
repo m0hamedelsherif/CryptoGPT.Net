@@ -1,0 +1,96 @@
+.main-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #2a2a2a;
+  color: white;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: #0099ff;
+  transition: color 0.2s;
+  
+  &:hover {
+    color: #00bbff;
+  }
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  
+  a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem 0;
+    position: relative;
+    transition: color 0.2s;
+    
+    &:hover {
+      color: #0099ff;
+    }
+    
+    &:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background-color: #0099ff;
+      transition: width 0.3s;
+    }
+    
+    &:hover:after,
+    &.active:after {
+      width: 100%;
+    }
+    
+    &.active {
+      color: #0099ff;
+    }
+  }
+}
+
+.user-actions {
+  display: flex;
+  gap: 1rem;
+  
+  .theme-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: color 0.2s;
+    
+    &:hover {
+      color: #0099ff;
+    }
+    
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .main-nav {
+    flex-direction: column;
+    padding: 1rem;
+  }
+  
+  .nav-links {
+    margin: 1rem 0;
+    gap: 1rem;
+  }
+}

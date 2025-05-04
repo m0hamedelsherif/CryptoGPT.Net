@@ -7,5 +7,6 @@ namespace CryptoGPT.Application.Features.Coins.Queries.GetMarketChart
     {
         public string CoinId { get; set; } = string.Empty;
         public int Days { get; set; } = 30;
+        public List<string> Indicators { get; set; } = [];
     }
 }

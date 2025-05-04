@@ -12,7 +12,7 @@ export enum RiskProfile {
   providedIn: 'root'
 })
 export class RecommendationService {
-  private apiUrl = 'http://localhost:5238/api';
+  private apiUrl = 'http://localhost:5000/api';
 
   constructor(private http: HttpClient) { }
 

@@ -1,0 +1,97 @@
+<!-- 
+
+<div class="recommendations-page">
+  <h1>Personalized Crypto Recommendations</h1>
+
+  <div class="risk-profile-form">
+    <h2>Your Investment Profile</h2>
+    <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="riskTolerance">Risk Tolerance</label>
+        <select id="riskTolerance" formControlName="riskTolerance">
+          <option value="low">Low - I prefer safer investments</option>
+          <option value="medium">Medium - I can accept moderate risk</option>
+          <option value="high">High - I'm comfortable with significant risk</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="investmentTimeframe">Investment Timeframe</label>
+        <select id="investmentTimeframe" formControlName="investmentTimeframe">
+          <option value="short">Short - Less than 1 year</option>
+          <option value="medium">Medium - 1-3 years</option>
+          <option value="long">Long - 3+ years</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Investment Goals</label>
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" [checked]="investmentGoals.includes('growth')" (change)="toggleGoal('growth')"> Growth
+          </label>
+          <label>
+            <input type="checkbox" [checked]="investmentGoals.includes('income')" (change)="toggleGoal('income')"> Income
+          </label>
+          <label>
+            <input type="checkbox" [checked]="investmentGoals.includes('preservation')" (change)="toggleGoal('preservation')"> Capital Preservation
+          </label>
+          <label>
+            <input type="checkbox" [checked]="investmentGoals.includes('speculation')" (change)="toggleGoal('speculation')"> Speculation
+          </label>
+        </div>
+        <div *ngIf="!investmentGoals.length && profileForm.touched" class="error-message">
+          Please select at least one investment goal.
+        </div>
+      </div>
+
+      <button type="submit" [disabled]="!profileForm.valid || !investmentGoals.length || loading()">
+        {{ loading() ? 'Generating...' : 'Get Recommendations' }}
+      </button>
+    </form>
+  </div>
+
+  <div *ngIf="loading()" class="loading-indicator">
+    Generating your personalized recommendations...
+  </div>
+
+  <div *ngIf="error() as errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+  <div class="recommendations-list" *ngIf="!loading() && !error() && recommendations().length > 0">
+    <h2>Your Personalized Recommendations</h2>
+    <div class="recommendation-card" *ngFor="let coin of recommendations()" [routerLink]="['/coin', coin.id]">
+      <div class="rank">{{ coin.marketCapRank ?? 'N/A' }}</div>
+      <div class="name-symbol">
+        <span class="name">{{ coin.name }}</span>
+        <span class="symbol">{{ coin.symbol }}</span>
+      </div>
+      <div class="price">${{ coin.currentPrice | number:'1.2-6' }}</div>
+      <div class="change"
+           [class.positive]="(coin.priceChangePercentage24h ?? 0) > 0"
+           [class.negative]="(coin.priceChangePercentage24h ?? 0) < 0">
+        {{ (coin.priceChangePercentage24h ?? 0) | number:'1.2-2' }}%
+      </div>
+      <div class="market-cap">${{ coin.marketCap | number }}</div>
+    </div>
+  </div>
+
+  <div class="no-recommendations" *ngIf="!loading() && !error() && recommendations().length === 0 && profileForm.touched">
+    <p>No recommendations found based on your profile. Try adjusting your criteria.</p>
+  </div>
+
+  <div class="recommendation-explanation" *ngIf="!loading() && !error() && recommendations().length > 0">
+    <h3>Why We Recommend These Assets</h3>
+    <p>
+      Based on your {{ profileForm.value.riskTolerance }} risk tolerance and
+      {{ profileForm.value.investmentTimeframe }} investment timeframe, we've selected cryptocurrencies
+      that align with your financial goals: {{ investmentGoals.join(', ') }}. This personalized portfolio aims to balance potential returns
+      with your comfort level for market volatility.
+    </p>
+
+    <div class="disclaimer">
+      <p><strong>Disclaimer:</strong> These recommendations are provided for informational purposes only and
+      do not constitute investment advice. Always conduct your own research before making investment decisions.</p>
+    </div>
+  </div>
+</div> -->

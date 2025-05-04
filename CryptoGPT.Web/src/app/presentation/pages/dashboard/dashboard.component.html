@@ -1,0 +1,221 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Crypto Dashboard</h1>
+    <div class="dashboard-actions">
+      <button class="refresh-button" [class.loading]="marketLoading()" (click)="refreshData()" [disabled]="marketLoading()">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Market Overview Section -->
+  <section class="market-overview-section">
+    <!-- Loading State -->
+    <div *ngIf="marketLoading()" class="loading-overlay">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="loading-text">Loading market data...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="marketError() && !marketLoading()" class="error-container">
+      <i class="bi bi-exclamation-triangle-fill error-icon"></i>
+      <h3 class="error-title">Unable to load market data</h3>
+      <p class="error-message">{{ marketError() }}</p>
+      <button class="btn btn-outline-danger" (click)="refreshData()">Try Again</button>
+    </div>
+
+    <!-- Content State -->
+    <div *ngIf="!marketLoading() && !marketError() && marketOverview() as overview">
+      <div class="section-header">
+        <h2>Market Overview</h2>
+      </div>
+      
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="label">Total Market Cap</div>
+          <div class="value">${{ formatLargeNumber(overview.marketMetrics?.['total_market_cap_usd']) }}</div>
+          <div class="change" [ngClass]="overview.marketCapChangePercentage24h > 0 ? 'positive' : 'negative'">
+            <i class="bi" [ngClass]="overview.marketCapChangePercentage24h > 0 ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
+            {{ overview.marketCapChangePercentage24h | number:'1.2-2' }}%
+          </div>
+        </div>
+        
+        <div class="stat-box">
+          <div class="label">24h Volume</div>
+          <div class="value">${{ formatLargeNumber(overview.marketMetrics?.['total_volume_usd']) }}</div>
+          <div class="change" [ngClass]="overview.volumeChangePercentage24h > 0 ? 'positive' : 'negative'">
+            <i class="bi" [ngClass]="overview.volumeChangePercentage24h > 0 ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
+            {{ overview.volumeChangePercentage24h | number:'1.2-2' }}%
+          </div>
+        </div>
+        
+        <div class="stat-box">
+          <div class="label">BTC Dominance</div>
+          <div class="value">{{ overview.marketMetrics?.['btc_dominance'] | number:'1.2-2' }}%</div>
+          <div class="change" [ngClass]="overview.btcDominanceChange > 0 ? 'positive' : 'negative'">
+            <i class="bi" [ngClass]="overview.btcDominanceChange > 0 ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
+            {{ overview.btcDominanceChange | number:'1.2-2' }}%
+          </div>
+        </div>
+        
+        <div class="stat-box">
+          <div class="label">Market Sentiment</div>
+          <div class="value">{{ overview.marketSentiment | titlecase }}</div>
+          <div class="change" 
+            [ngClass]="overview.marketSentiment === 'bullish' ? 'positive' : overview.marketSentiment === 'bearish' ? 'negative' : 'neutral'">
+            <i class="bi" [ngClass]="getSentimentIcon(overview.marketSentiment)"></i>
+            {{ getSentimentValue(overview.marketSentiment) }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Market Trends Chart -->
+      <div class="market-trends-chart">
+        <!-- Chart Placeholder - Will be replaced with actual chart component -->
+        <div *ngIf="chartLoading()" class="spinner-container">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading chart...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="dashboard-grid">
+    <div class="main-content">
+      <!-- Top Performers Section -->
+      <section class="performers-section">
+        <div class="section-header">
+          <h2>Performance Leaders (24h)</h2>
+          <div class="view-toggle">
+            <button class="toggle-button" [class.active]="performersView() === 'gainers'" (click)="setPerformersView('gainers')">
+              Gainers
+            </button>
+            <button class="toggle-button" [class.active]="performersView() === 'losers'" (click)="setPerformersView('losers')">
+              Losers
+            </button>
+          </div>
+        </div>
+        
+        <!-- Loading State -->
+        <div *ngIf="marketLoading()" class="loading-overlay">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+        
+        <!-- Content State -->
+        <div *ngIf="!marketLoading() && !marketError()">
+          <div class="performers-grid" *ngIf="currentPerformers().length > 0; else noPerformers">
+            <div class="performer-card" 
+              [ngClass]="performersView() === 'gainers' ? 'gainers' : 'losers'"
+              *ngFor="let coin of currentPerformers()" 
+              [routerLink]="['/coin', coin.id]">
+              <div class="coin-info">
+                <img *ngIf="coin.image" [src]="coin.image" [alt]="coin.name" class="coin-icon">
+                <div>
+                  <div class="coin-name">{{ coin.name }}</div>
+                  <div class="coin-symbol">{{ coin.symbol }}</div>
+                </div>
+              </div>
+              <div class="change" [ngClass]="(coin.priceChangePercentage24h || 0) > 0 ? 'positive' : 'negative'">
+                <i class="bi" [ngClass]="(coin.priceChangePercentage24h || 0) > 0 ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
+                {{ (coin.priceChangePercentage24h || 0) | number:'1.2-2' }}%
+              </div>
+              <div class="price">${{ coin.currentPrice | number:'1.2-6' }}</div>
+            </div>
+          </div>
+          <ng-template #noPerformers>
+            <div class="alert alert-info">
+              No {{ performersView() === 'gainers' ? 'top' : 'worst' }} performers data available.
+            </div>
+          </ng-template>
+        </div>
+      </section>
+      
+      <!-- AI Recommendations Section -->
+      <section class="recommended-section" *ngIf="recommendations().length > 0">
+        <div class="section-header">
+          <h2>AI Trade Recommendations</h2>
+          <a routerLink="/recommendations" class="view-all">View All</a>
+        </div>
+        
+        <div class="recommendation-list">
+          <div class="recommendation-card" *ngFor="let rec of recommendations().slice(0, 3)" [routerLink]="['/coin', rec.coinId]">
+            <div class="recommendation-icon">
+              <i class="bi" [ngClass]="getRecommendationIcon(rec.type)"></i>
+            </div>
+            <div class="recommendation-content">
+              <div class="coin-name">
+                {{ rec.coinName }} <span class="coin-symbol">{{ rec.coinSymbol }}</span>
+              </div>
+              <div class="recommendation-type" [ngClass]="rec.type.toLowerCase()">
+                {{ rec.type }} at ${{ rec.price | number:'1.2-2' }}
+              </div>
+            </div>
+            <div class="recommendation-details">
+              <div class="confidence">{{ rec.confidence | titlecase }}</div>
+              <div class="confidence-level">
+                <div class="confidence-bar" [ngClass]="rec.confidence.toLowerCase()"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    
+    <!-- News Section -->
+    <section class="news-section">
+      <div class="section-header">
+        <h2>Latest News</h2>
+        <a routerLink="/news" class="view-all">
+          View All
+          <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+      
+      <!-- Loading State -->
+      <div *ngIf="newsLoading()" class="loading-overlay">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Loading news...</span>
+        </div>
+      </div>
+      
+      <!-- Error State -->
+      <div *ngIf="newsError() && !newsLoading()" class="error-container">
+        <i class="bi bi-exclamation-triangle-fill error-icon"></i>
+        <h3 class="error-title">Unable to load news</h3>
+        <p class="error-message">{{ newsError() }}</p>
+        <button class="btn btn-outline-danger" (click)="refreshNews()">Try Again</button>
+      </div>
+      
+      <!-- Content State -->
+      <div *ngIf="!newsLoading() && !newsError()">
+        <div class="news-list" *ngIf="news().length > 0; else noNews">
+          <div class="news-item" *ngFor="let newsItem of news().slice(0, 5)">
+            <h3 class="news-title">
+              <a [href]="newsItem.url" target="_blank">{{ newsItem.title }}</a>
+            </h3>
+            <p class="summary">{{ newsItem.description || newsItem.summary }}</p>
+            <div class="meta">
+              <div class="source">
+                <i class="bi bi-newspaper"></i>
+                {{ newsItem.source }}
+              </div>
+              <div class="date">
+                <i class="bi bi-clock"></i>
+                {{ newsItem.publishedAt | date:'MMM d' }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <ng-template #noNews>
+          <div class="alert alert-info">No news available at the moment.</div>
+        </ng-template>
+      </div>
+    </section>
+  </div>
+</div>

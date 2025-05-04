@@ -1,0 +1,26 @@
+<div class="news-card">
+  <div *ngIf="showImage && newsItem.imageUrl" class="news-image-container">
+    <img [src]="newsItem.imageUrl" class="news-image" alt="{{ newsItem.title }}">
+    <div *ngIf="newsItem.sentiment" class="sentiment" [ngClass]="newsItem.sentiment">
+      {{ newsItem.sentiment | titlecase }}
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="news-content">
+      <h5 class="news-title">
+        <a [href]="newsItem.url" target="_blank">{{ newsItem.title }}</a>
+      </h5>
+      <div *ngIf="newsItem.relatedCoins && newsItem.relatedCoins.length > 0" class="news-tags">
+        <span *ngFor="let coin of newsItem.relatedCoins" class="badge">{{ coin }}</span>
+      </div>
+      <p class="news-description">{{ newsItem.description || newsItem.summary }}</p>
+    </div>
+    <div class="news-meta">
+      <span class="source">
+        <i class="bi bi-newspaper"></i>
+        {{ newsItem.source }}
+      </span>
+      <span class="date">{{ newsItem.publishedAt | date:'MMM d, y' }}</span>
+    </div>
+  </div>
+</div>

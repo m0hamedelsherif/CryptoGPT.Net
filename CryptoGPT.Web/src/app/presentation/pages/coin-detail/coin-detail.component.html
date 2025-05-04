@@ -1,0 +1,441 @@
+<div class="coin-detail-container">
+  <!-- Loading state -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p>Loading cryptocurrency data...</p>
+  </div>
+
+  <!-- Error state -->
+  <div *ngIf="error" class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    {{ error }}
+    <button type="button" class="btn-close float-end" (click)="error = null"></button>
+  </div>
+
+  <!-- Main content -->
+  <div *ngIf="!isLoading && coinData" class="coin-content">
+    <!-- Header section -->
+    <div class="coin-header">
+      <div class="coin-identity">
+        <img *ngIf="coinData.imageUrl" [src]="coinData.imageUrl" [alt]="coinData.name" class="coin-icon">
+        <div class="coin-names">
+          <h1>{{ coinData.name }} <span class="coin-symbol">{{ coinData.symbol | uppercase }}</span></h1>
+          <div class="coin-rank">Rank #{{ coinData.marketCapRank }}</div>
+        </div>
+      </div>
+      <div class="coin-price-container">
+        <div class="current-price">${{ coinData.currentPrice | number:'1.2-8' }}</div>
+        <div class="price-change" [ngClass]="coinData.priceChangePercentage24h > 0 ? 'positive' : 'negative'">
+          <i [class]="coinData.priceChangePercentage24h > 0 ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+          {{ coinData.priceChangePercentage24h | number:'1.2-2' }}% (24h)
+        </div>
+        <div class="price-range">
+          <small>24h Range: ${{ coinData.low24h | number:'1.2-6' }} - ${{ coinData.high24h | number:'1.2-6' }}</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Market data cards -->
+    <div class="market-data-grid">
+      <div class="market-card">
+        <div class="card-label">Market Cap</div>
+        <div class="card-value">${{ coinData.marketCap |formatLargeNumber }}</div>
+      </div>
+      <div class="market-card">
+        <div class="card-label">24h Trading Volume</div>
+        <div class="card-value">${{ coinData.volume24h | formatLargeNumber }}</div>
+      </div>
+      <div class="market-card" *ngIf="coinData.circulatingSupply">
+        <div class="card-label">Circulating Supply</div>
+        <div class="card-value">{{ coinData.circulatingSupply | formatLargeNumber}} {{ coinData.symbol | uppercase }}
+        </div>
+      </div>
+      <div class="market-card" *ngIf="coinData.totalSupply">
+        <div class="card-label">Total Supply</div>
+        <div class="card-value">{{ coinData.totalSupply | formatLargeNumber }} {{ coinData.symbol | uppercase }}</div>
+      </div>
+    </div>
+
+    <!-- Price chart -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <h2>Price Chart</h2>
+        <div class="chart-controls">
+          <div class="time-period-selector">
+            <button class="btn" [ngClass]="selectedDays === 1 ? 'btn-primary' : 'btn-outline-primary'"
+              (click)="updateChartPeriod(1)">24h</button>
+            <button class="btn" [ngClass]="selectedDays === 7 ? 'btn-primary' : 'btn-outline-primary'"
+              (click)="updateChartPeriod(7)">7d</button>
+            <button class="btn" [ngClass]="selectedDays === 30 ? 'btn-primary' : 'btn-outline-primary'"
+              (click)="updateChartPeriod(30)">30d</button>
+            <button class="btn" [ngClass]="selectedDays === 90 ? 'btn-primary' : 'btn-outline-primary'"
+              (click)="updateChartPeriod(90)">90d</button>
+            <button class="btn" [ngClass]="selectedDays === 365 ? 'btn-primary' : 'btn-outline-primary'"
+              (click)="updateChartPeriod(365)">1y</button>
+          </div>
+          <button class="btn btn-outline-secondary" (click)="toggleIndicatorPanel()">
+            <i class="bi bi-graph-up"></i>
+            {{ showIndicatorPanel ? 'Hide Indicators' : 'Show Indicators' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Indicator panel -->
+      <div *ngIf="showIndicatorPanel" class="indicator-panel">
+        <div class="indicator-options">
+          <div class="indicator-option">
+            <input type="checkbox" id="sma14" [(ngModel)]="enabledIndicators['sma_14']" (change)="loadChartData()">
+            <label for="sma14">SMA (14)</label>
+          </div>
+          <div class="indicator-option">
+            <input type="checkbox" id="ema14" [(ngModel)]="enabledIndicators['ema_14']" (change)="loadChartData()">
+            <label for="ema14">EMA (14)</label>
+          </div>
+          <div class="indicator-option">
+            <input type="checkbox" id="bollingerBands" [(ngModel)]="enabledIndicators['bollinger_upper']"
+              (change)="loadChartData()">
+            <label for="bollingerBands">Bollinger Bands</label>
+          </div>
+          <div class="indicator-option">
+            <input type="checkbox" id="rsi" [(ngModel)]="enabledIndicators['rsi']" (change)="loadChartData()">
+            <label for="rsi">RSI</label>
+          </div>
+          <div class="indicator-option">
+            <input type="checkbox" id="macd" [(ngModel)]="enabledIndicators['macd']" (change)="loadChartData()">
+            <label for="macd">MACD</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="chart-container">
+        <apx-chart #chartObj 
+          [series]="chartOptions.series" 
+          [chart]="chartOptions.chart" 
+          [xaxis]="chartOptions.xaxis"
+          [yaxis]="chartOptions.yaxis" 
+          [title]="chartOptions.title" 
+          [stroke]="chartOptions.stroke"
+          [dataLabels]="chartOptions.dataLabels" 
+          [fill]="chartOptions.fill" 
+          [markers]="chartOptions.markers" 
+          [grid]="chartOptions.grid" 
+          [legend]="chartOptions.legend"
+          [theme]="chartOptions.theme" 
+          [annotations]="chartOptions.annotations"
+          [tooltip]="chartOptions.tooltip">
+        </apx-chart>
+      </div>
+    </div>
+
+    <!-- Technical Analysis -->
+    <div *ngIf="technicalAnalysis" class="technical-analysis-section">
+      <h2>Technical Analysis</h2>
+      
+      <!-- Overall Analysis Summary -->
+      <div class="ta-summary">
+        <div class="ta-summary-card signal-card" [ngClass]="getSignalClass(technicalAnalysis.signal)">
+          <div class="card-label">Signal</div>
+          <div class="card-value">
+            <i [class]="getSignalIcon(technicalAnalysis.signal)"></i>
+            {{ technicalAnalysis.signal | titlecase }}
+          </div>
+        </div>
+        <div class="ta-summary-card">
+          <div class="card-label">Strength</div>
+          <div class="card-value">
+            <div class="strength-meter">
+              <div class="strength-bar" [style.width.%]="technicalAnalysis.strength * 10"></div>
+            </div>
+            <div class="strength-value">{{ technicalAnalysis.strength }}/10</div>
+          </div>
+        </div>
+        <div class="ta-summary-card trend-card" [ngClass]="getSignalClass(technicalAnalysis.trend)">
+          <div class="card-label">Trend</div>
+          <div class="card-value">
+            <i [class]="getTrendIcon(technicalAnalysis.trend)"></i>
+            {{ technicalAnalysis.trend | titlecase }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis Summary Text -->
+      <div class="ta-analysis-summary">
+        <div class="summary-text">
+          <i class="bi bi-chat-square-quote"></i>
+          <p>{{ technicalAnalysis.summary }}</p>
+        </div>
+      </div>
+
+      <!-- Signals List -->
+      <div class="signals-list" *ngIf="getSignalsList().length > 0">
+        <h3>Technical Signals</h3>
+        <div class="signals-grid">
+          <div class="signal-item" *ngFor="let signal of getSignalsList()" [ngClass]="getSignalClass(signal.value)">
+            <div class="signal-icon">
+              <i [class]="getSignalIcon(signal.type)"></i>
+            </div>
+            <div class="signal-content">
+              <h5>{{ signal.name }}</h5>
+              <p>{{ signal.description }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Indicator groups -->
+      <div class="ta-indicator-tabs">
+        <h3>Indicator Analysis</h3>
+        <ul class="nav nav-tabs" id="indicatorTabs" role="tablist">
+          <li class="nav-item" role="presentation" *ngIf="hasMovingAverages()">
+            <button class="nav-link active" id="moving-averages-tab" data-bs-toggle="tab" 
+                    data-bs-target="#moving-averages" type="button" role="tab" 
+                    aria-controls="moving-averages" aria-selected="true">
+              Moving Averages
+            </button>
+          </li>
+          <li class="nav-item" role="presentation" *ngIf="hasOscillators()">
+            <button class="nav-link" id="oscillators-tab" data-bs-toggle="tab" 
+                    data-bs-target="#oscillators" type="button" role="tab" 
+                    aria-controls="oscillators" aria-selected="false">
+              Oscillators
+            </button>
+          </li>
+          <li class="nav-item" role="presentation" *ngIf="hasVolatilityIndicators()">
+            <button class="nav-link" id="volatility-tab" data-bs-toggle="tab" 
+                    data-bs-target="#volatility" type="button" role="tab" 
+                    aria-controls="volatility" aria-selected="false">
+              Volatility
+            </button>
+          </li>
+          <li class="nav-item" role="presentation" *ngIf="hasVolumeIndicators()">
+            <button class="nav-link" id="volume-tab" data-bs-toggle="tab" 
+                    data-bs-target="#volume" type="button" role="tab" 
+                    aria-controls="volume" aria-selected="false">
+              Volume
+            </button>
+          </li>
+        </ul>
+        
+        <div class="tab-content p-3 border border-top-0 rounded-bottom" id="indicatorTabContent">
+          <!-- Moving Averages Tab -->
+          <div class="tab-pane fade show active" id="moving-averages" role="tabpanel" aria-labelledby="moving-averages-tab" *ngIf="hasMovingAverages()">
+            <div class="indicator-group-header">
+              <h4>Moving Averages</h4>
+              <p *ngIf="getMovingAveragesDescription()">{{ getMovingAveragesDescription() }}</p>
+              <p *ngIf="getMovingAveragesMeaning()" class="indicator-meaning">
+                <i class="bi bi-info-circle"></i> {{ getMovingAveragesMeaning() }}
+              </p>
+            </div>
+            <div class="indicator-table">
+              <div class="indicator-row header">
+                <div>Indicator</div>
+                <div>Value</div>
+                <div>Signal</div>
+              </div>
+              <div class="indicator-row" *ngFor="let indicator of getMovingAveragesIndicators()">
+                <div class="indicator-name">
+                  {{ indicator.name }}
+                  <i class="bi bi-info-circle-fill" title="Moving average of price over the specified period"></i>
+                </div>
+                <div class="indicator-value">${{ indicator.value | number:'1.2-6' }}</div>
+                <div class="indicator-signal" [ngClass]="getSignalClass(indicator.signal)">
+                  <i [class]="getSignalIcon(indicator.signal)" class="me-1"></i>
+                  {{ indicator.signal | titlecase }}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Oscillators Tab -->
+          <div class="tab-pane fade" id="oscillators" role="tabpanel" aria-labelledby="oscillators-tab" *ngIf="hasOscillators()">
+            <div class="indicator-group-header">
+              <h4>Oscillators</h4>
+              <p *ngIf="getOscillatorsDescription()">{{ getOscillatorsDescription() }}</p>
+              <p *ngIf="getOscillatorsMeaning()" class="indicator-meaning">
+                <i class="bi bi-info-circle"></i> {{ getOscillatorsMeaning() }}
+              </p>
+            </div>
+            <div class="indicator-table">
+              <div class="indicator-row header">
+                <div>Indicator</div>
+                <div>Value</div>
+                <div>Signal</div>
+              </div>
+              <div class="indicator-row" *ngFor="let indicator of getOscillatorsIndicators()">
+                <div class="indicator-name">
+                  {{ indicator.name }}
+                  <i class="bi bi-info-circle-fill" [title]="getIndicatorTooltip(indicator.name)"></i>
+                </div>
+                <div class="indicator-value">{{ indicator.value | number:'1.2-2' }}</div>
+                <div class="indicator-signal" [ngClass]="getSignalClass(indicator.signal)">
+                  <i [class]="getSignalIcon(indicator.signal)" class="me-1"></i>
+                  {{ indicator.signal | titlecase }}
+                </div>
+              </div>
+            </div>
+            
+            <!-- RSI Visualization if available -->
+            <div class="oscillator-visualization" *ngIf="hasRsiData()">
+              <h5>RSI Interpretation</h5>
+              <div class="rsi-meter">
+                <div class="rsi-zone oversold">Oversold</div>
+                <div class="rsi-zone neutral">Neutral</div>
+                <div class="rsi-zone overbought">Overbought</div>
+                <div class="rsi-pointer" [style.left.%]="getRsiPercentage()"></div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Volatility Tab -->
+          <div class="tab-pane fade" id="volatility" role="tabpanel" aria-labelledby="volatility-tab" *ngIf="hasVolatilityIndicators()">
+            <div class="indicator-group-header">
+              <h4>Volatility Indicators</h4>
+              <p *ngIf="getVolatilityDescription()">{{ getVolatilityDescription() }}</p>
+              <p *ngIf="getVolatilityMeaning()" class="indicator-meaning">
+                <i class="bi bi-info-circle"></i> {{ getVolatilityMeaning() }}
+              </p>
+            </div>
+            <div class="indicator-table">
+              <div class="indicator-row header">
+                <div>Indicator</div>
+                <div>Value</div>
+                <div>Signal</div>
+              </div>
+              <div class="indicator-row" *ngFor="let indicator of getVolatilityIndicators()">
+                <div class="indicator-name">
+                  {{ indicator.name }}
+                  <i class="bi bi-info-circle-fill" [title]="getIndicatorTooltip(indicator.name)"></i>
+                </div>
+                <div class="indicator-value">{{ indicator.value | number:'1.2-4' }}</div>
+                <div class="indicator-signal" [ngClass]="getSignalClass(indicator.signal)">
+                  <i [class]="getSignalIcon(indicator.signal)" class="me-1"></i>
+                  {{ indicator.signal | titlecase }}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Volume Tab -->
+          <div class="tab-pane fade" id="volume" role="tabpanel" aria-labelledby="volume-tab" *ngIf="hasVolumeIndicators()">
+            <div class="indicator-group-header">
+              <h4>Volume Indicators</h4>
+              <p *ngIf="getVolumeDescription()">{{ getVolumeDescription() }}</p>
+              <p *ngIf="getVolumeMeaning()" class="indicator-meaning">
+                <i class="bi bi-info-circle"></i> {{ getVolumeMeaning() }}
+              </p>
+            </div>
+            <div class="indicator-table">
+              <div class="indicator-row header">
+                <div>Indicator</div>
+                <div>Value</div>
+                <div>Signal</div>
+              </div>
+              <div class="indicator-row" *ngFor="let indicator of getVolumeIndicators()">
+                <div class="indicator-name">
+                  {{ indicator.name }}
+                  <i class="bi bi-info-circle-fill" [title]="getIndicatorTooltip(indicator.name)"></i>
+                </div>
+                <div class="indicator-value">{{ indicator.value | number:'1.2-2' }}</div>
+                <div class="indicator-signal" [ngClass]="getSignalClass(indicator.signal)">
+                  <i [class]="getSignalIcon(indicator.signal)" class="me-1"></i>
+                  {{ indicator.signal | titlecase }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Support and Resistance levels -->
+      <div class="support-resistance-section" *ngIf="getSupportLevels().length || getResistanceLevels().length">
+        <h3>Support & Resistance Levels</h3>
+        <div class="levels-container">
+          <div class="resistance-levels" *ngIf="getResistanceLevels().length">
+            <h5>Resistance Levels</h5>
+            <ul>
+              <li *ngFor="let level of getResistanceLevels(); let i = index" 
+                  [ngClass]="{'strong-level': i === 0}" 
+                  [title]="i === 0 ? 'Strong resistance level' : 'Resistance level'">
+                ${{ level | number:'1.2-6' }}
+                <small *ngIf="i === 0" class="strong-indicator">Strong</small>
+              </li>
+            </ul>
+          </div>
+          <div class="current-price-indicator">
+            <div class="price-point">${{ coinData.currentPrice | number:'1.2-6' }}</div>
+            <div class="price-line"></div>
+          </div>
+          <div class="support-levels" *ngIf="getSupportLevels().length">
+            <h5>Support Levels</h5>
+            <ul>
+              <li *ngFor="let level of getSupportLevels(); let i = index" 
+                  [ngClass]="{'strong-level': i === 0}"
+                  [title]="i === 0 ? 'Strong support level' : 'Support level'">
+                ${{ level | number:'1.2-6' }}
+                <small *ngIf="i === 0" class="strong-indicator">Strong</small>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- About section -->
+    <div *ngIf="coinData.description" class="about-section">
+      <h2>About {{ coinData.name }}</h2>
+      <div class="description" [innerHTML]="coinData.description"></div>
+
+      <div class="additional-info">
+        <div class="info-row" *ngIf="coinData.categories?.length">
+          <div class="info-label">Categories:</div>
+          <div class="info-value categories">
+            <span class="category" *ngFor="let category of coinData.categories">{{ category }}</span>
+          </div>
+        </div>
+        <div class="info-row" *ngIf="coinData.genesisDate">
+          <div class="info-label">Genesis Date:</div>
+          <div class="info-value">{{ coinData.genesisDate | date }}</div>
+        </div>
+        <div class="info-row" *ngIf="coinData.hashingAlgorithm">
+          <div class="info-label">Hashing Algorithm:</div>
+          <div class="info-value">{{ coinData.hashingAlgorithm }}</div>
+        </div>
+      </div>
+
+      <!-- External links -->
+      <div *ngIf="coinData.homepage || coinData.blockchainSite || coinData.whitepaper" class="external-links">
+        <h4>Links</h4>
+        <div class="links-container">
+          <a *ngIf="coinData.homepage" [href]="coinData.homepage" target="_blank" class="link-btn">
+            <i class="bi bi-globe"></i> Website
+          </a>
+          <a *ngIf="coinData.blockchainSite" [href]="coinData.blockchainSite" target="_blank" class="link-btn">
+            <i class="bi bi-link-45deg"></i> Explorer
+          </a>
+          <a *ngIf="coinData.whitepaper" [href]="coinData.whitepaper" target="_blank" class="link-btn">
+            <i class="bi bi-file-earmark-text"></i> Whitepaper
+          </a>
+          <a *ngIf="coinData.twitter" [href]="coinData.twitter" target="_blank" class="link-btn">
+            <i class="bi bi-twitter"></i> Twitter
+          </a>
+          <a *ngIf="coinData.reddit" [href]="coinData.reddit" target="_blank" class="link-btn">
+            <i class="bi bi-reddit"></i> Reddit
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related news -->
+    <div *ngIf="relatedNews && relatedNews.length > 0" class="related-news-section">
+      <h2>Related News</h2>
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <div class="col" *ngFor="let news of relatedNews">
+          <app-news-card [newsItem]="news"></app-news-card>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

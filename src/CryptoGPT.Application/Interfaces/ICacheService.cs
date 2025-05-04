@@ -9,35 +9,35 @@ namespace CryptoGPT.Application.Interfaces
     public interface ICacheService
     {
         /// <summary>
-        /// Gets a cached item by key
+        /// Get cached item by key
         /// </summary>
         /// <typeparam name="T">Type of the cached item</typeparam>
         /// <param name="key">Cache key</param>
-        /// <returns>Cached item or default value if not found</returns>
+        /// <returns>Cached item or null if not found</returns>
         Task<T?> GetAsync<T>(string key) where T : class;
 
         /// <summary>
-        /// Sets an item in the cache with an expiration time
+        /// Set item in cache with expiration time
         /// </summary>
-        /// <typeparam name="T">Type of the cached item</typeparam>
+        /// <typeparam name="T">Type of the item to cache</typeparam>
         /// <param name="key">Cache key</param>
-        /// <param name="value">Item to cache</param>
-        /// <param name="expirationTime">Expiration time</param>
-        /// <returns>Task representing the asynchronous operation</returns>
-        Task SetAsync<T>(string key, T value, TimeSpan expirationTime) where T : class;
+        /// <param name="value">Value to cache</param>
+        /// <param name="expiry">Cache expiration timespan</param>
+        /// <returns>True if successful</returns>
+        Task<bool> SetAsync<T>(string key, T value, TimeSpan expiry) where T : class;
 
         /// <summary>
-        /// Removes an item from the cache
+        /// Remove item from cache by key
         /// </summary>
         /// <param name="key">Cache key</param>
-        /// <returns>Task representing the asynchronous operation</returns>
-        Task RemoveAsync(string key);
+        /// <returns>True if successful</returns>
+        Task<bool> RemoveAsync(string key);
 
         /// <summary>
-        /// Determines whether a key exists in the cache
+        /// Check if item exists in cache
         /// </summary>
         /// <param name="key">Cache key</param>
-        /// <returns>True if the key exists; otherwise, false</returns>
+        /// <returns>True if exists</returns>
         Task<bool> ExistsAsync(string key);
     }
 }

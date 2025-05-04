@@ -24,6 +24,6 @@ export class CryptoApiService {
   }
 
   getMarketOverview(): Observable<MarketOverview> {
-    return this.apiClient.get<MarketOverview>('market/overview');
+    return this.apiClient.get<MarketOverview>(`${this.baseEndpoint}/overview`);
   }
 }

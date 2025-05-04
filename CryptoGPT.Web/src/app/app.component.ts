@@ -6,17 +6,8 @@ import { NavigationComponent } from './presentation/components/navigation.compon
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, NavigationComponent],
-  template: `
-    <app-navigation></app-navigation>
-    <main class="main-content">
-      <router-outlet></router-outlet>
-    </main>
-  `,
-  styles: [`
-    .main-content {
-      padding: 1rem;
-    }
-  `]
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.scss'
 })
 export class AppComponent {
   title = 'CryptoGPTWeb';

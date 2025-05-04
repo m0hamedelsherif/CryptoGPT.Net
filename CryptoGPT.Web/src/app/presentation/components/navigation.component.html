@@ -1,0 +1,16 @@
+<nav class="main-nav">
+  <div class="logo" routerLink="/">CryptoGPT</div>
+
+  <div class="nav-links">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Dashboard</a>
+    <a routerLink="/coins" routerLinkActive="active">Market</a>
+    <a routerLink="/news" routerLinkActive="active">News</a>
+    <a routerLink="/recommendations" routerLinkActive="active">Recommendations</a>
+  </div>
+
+  <div class="user-actions">
+    <button class="theme-toggle" (click)="toggleTheme()">
+      <i class="fa fa-moon-o" aria-hidden="true"></i>
+    </button>
+  </div>
+</nav>

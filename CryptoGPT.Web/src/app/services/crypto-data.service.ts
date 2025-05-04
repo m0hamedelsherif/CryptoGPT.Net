@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CryptoDataService {
-  private apiUrl = 'http://localhost:5238/api'; // Default API URL
+  private apiUrl = environment.apiUrl; // Use environment configuration
 
   constructor(private http: HttpClient) { }
 
@@ -31,7 +32,7 @@ export class CryptoDataService {
     days: number = 30, 
     indicators?: string[]
   ): Observable<any> {
-    let url = `${this.apiUrl}/coin/${coinId}/enhanced-chart?days=${days}`;
+    let url = `${this.apiUrl}/coin/${coinId}/chart?days=${days}`;
     
     // Add indicators if provided
     if (indicators && indicators.length > 0) {

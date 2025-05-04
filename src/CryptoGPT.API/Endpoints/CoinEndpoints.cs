@@ -2,9 +2,12 @@ using Asp.Versioning;
 using Asp.Versioning.Builder;
 using CryptoGPT.Application.Features.Coins.Queries.GetCoinDetails;
 using CryptoGPT.Application.Features.Coins.Queries.GetMarketChart;
+using CryptoGPT.Application.Features.Coins.Queries.GetMarketOverview;
+using CryptoGPT.Application.Features.Coins.Queries.GetTechnicalAnalysis;
 using CryptoGPT.Application.Features.Coins.Queries.GetTopCoins;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using System.Net;
 
 namespace CryptoGPT.API.Endpoints
@@ -73,14 +76,15 @@ namespace CryptoGPT.API.Endpoints
             .WithDescription("Get detailed information for a specific cryptocurrency");
 
             // Get historical market data for a cryptocurrency
-            group.MapGet("/{coinId}/chart", async (IMediator mediator, string coinId, int? days) =>
+            group.MapGet("/{coinId}/chart", async (IMediator mediator, string coinId, int? days, string? indicators) =>
             {
                 try
                 {
                     var result = await mediator.Send(new GetMarketChartQuery
                     {
                         CoinId = coinId,
-                        Days = days ?? 30
+                        Days = days ?? 30,
+                        Indicators = [.. indicators?.Split(',') ?? []]
                     });
 
                     return Results.Ok(result);
@@ -98,6 +102,46 @@ namespace CryptoGPT.API.Endpoints
             })
             .WithName("GetMarketChart")
             .WithDescription("Get historical market data for a cryptocurrency");
+
+            // Get market overview
+            group.MapGet("/overview", async (IMediator mediator) =>
+            {
+                // Assuming GetMarketOverviewQuery exists or will be created
+                var result = await mediator.Send(new GetMarketOverviewQuery());
+                return Results.Ok(result);
+            })
+            .WithName("GetMarketOverview")
+            .WithDescription("Get the overall cryptocurrency market overview");
+
+            // technical analysis
+            group.MapGet("/{coinId}/technical-analysis", async (IMediator mediator, string coinId, int? days) =>
+            {
+                try
+                {
+                    var result = await mediator.Send(new GetTechnicalAnalysisQuery
+                    {
+                        CoinId = coinId,
+                        Days = days ?? 30
+                    });
+
+                    if (result == null)
+                        return Results.NotFound();
+
+                    return Results.Ok(result);
+                }
+                catch (ValidationException ex)
+                {
+                    return Results.ValidationProblem(
+                        ex.Errors.ToDictionary(
+                            error => error.PropertyName,
+                            error => new[] { error.ErrorMessage }
+                        ),
+                        statusCode: (int)HttpStatusCode.BadRequest
+                    );
+                }
+            })
+            .WithName("GetTechnicalAnalysis")
+            .WithDescription("Get technical analysis indicators for a cryptocurrency");
 
             return app;
         }

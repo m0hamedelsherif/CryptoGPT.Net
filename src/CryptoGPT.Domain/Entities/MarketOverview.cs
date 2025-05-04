@@ -4,13 +4,16 @@ using System.Collections.Generic;
 namespace CryptoGPT.Domain.Entities
 {
     /// <summary>
-    /// Represents a market overview with top gainers, losers, and volume data
+    /// Represents a summary of the overall cryptocurrency market.
     /// </summary>
     public class MarketOverview
     {
-        public List<CryptoCurrency> TopGainers { get; set; } = new List<CryptoCurrency>();
-        public List<CryptoCurrency> TopLosers { get; set; } = new List<CryptoCurrency>();
-        public List<CryptoCurrency> TopByVolume { get; set; } = new List<CryptoCurrency>();
-        public Dictionary<string, decimal?> MarketMetrics { get; set; } = new Dictionary<string, decimal?>();
+        public DateTime GeneratedAt { get; set; }
+        public string MarketSentiment { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public List<CryptoCurrency> TopPerformers { get; set; } = [];
+        public List<CryptoCurrency> WorstPerformers { get; set; } = [];
+        public List<CryptoCurrency> TopByVolume { get; set; } = [];
+        public Dictionary<string, decimal?> MarketMetrics { get; set; } = [];
     }
 }

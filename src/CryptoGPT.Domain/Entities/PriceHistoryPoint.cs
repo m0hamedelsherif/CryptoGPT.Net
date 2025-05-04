@@ -3,14 +3,18 @@ using System.Text.Json.Serialization;
 namespace CryptoGPT.Domain.Entities
 {
     /// <summary>
-    /// Represents historical price data point for a cryptocurrency
+    /// Represents a single point of price history data
     /// </summary>
     public class PriceHistoryPoint
     {
-        [JsonPropertyName("timestamp")]
+        /// <summary>
+        /// Unix timestamp in milliseconds
+        /// </summary>
         public long Timestamp { get; set; }
-
-        [JsonPropertyName("price")]
+        
+        /// <summary>
+        /// Price value at the given timestamp
+        /// </summary>
         public decimal Price { get; set; }
     }
 }
